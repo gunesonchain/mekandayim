@@ -16,32 +16,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
     }));
 
-    // Dynamic routes (Locations)
-    // Fetch most recent or popular locations to include in sitemap
-    // Including ALL locations might be too much if there are thousands, but for now include all.
-    let locations: any[] = [];
-    try {
-        locations = await prisma.location.findMany({
-            select: {
-                slug: true,
-                entries: {
-                    orderBy: { createdAt: 'desc' },
-                    take: 1,
-                    select: { createdAt: true }
-                }
-            }
-        });
-    } catch (error) {
-        console.error("Sitemap generation failed to fetch locations:", error);
-        // Continue with empty locations list to allow build to succeed
-    }
-
-    const locationRoutes = locations.map((loc) => ({
-        url: `${baseUrl}/location/${loc.slug}`,
-        lastModified: loc.entries[0]?.createdAt || new Date(),
-        changeFrequency: 'weekly' as const,
-        priority: 0.6,
-    }));
-
-    return [...routes, ...locationRoutes];
+    // Dynamic routes disabled temporarily to ensure successful build
+    return [...routes];
 }
