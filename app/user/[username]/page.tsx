@@ -51,6 +51,7 @@ export default async function UserProfilePage({ params, searchParams }: UserPage
     }
 
     const session = await getServerSession(authOptions);
+    // @ts-ignore
     const userId = session?.user?.id ? (session.user.id as string) : null;
 
     // Check if the current viewer is the owner of this profile
