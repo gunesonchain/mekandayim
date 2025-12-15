@@ -7,10 +7,12 @@ import { revalidatePath } from "next/cache";
 
 export async function getConversations() {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return [];
+    if (!session?.user) return [];
 
     // @ts-ignore
-    const userId = session.user.id; // Currently logged in user
+    const userId = session.user.id as string;
+
+    if (!userId) return [];
 
     // Helper to get logic for filtering deleted messages
     const notDeletedForUser = {
@@ -95,10 +97,12 @@ export async function getConversations() {
 
 export async function getMessages(otherUserId: string) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return [];
+    if (!session?.user) return [];
 
     // @ts-ignore
-    const userId = session.user.id;
+    const userId = session.user.id as string;
+
+    if (!userId) return [];
 
     const messages = await prisma.message.findMany({
         where: {
@@ -145,10 +149,12 @@ export async function getMessages(otherUserId: string) {
 
 export async function sendMessage(receiverId: string, content: string, image?: string) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) throw new Error("Unauthorized");
+    if (!session?.user) throw new Error("Unauthorized");
 
     // @ts-ignore
-    const senderId = session.user.id;
+    const senderId = session.user.id as string;
+
+    if (!senderId) throw new Error("Unauthorized");
 
     // Rate Limiting: Max 15 messages per minute
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
@@ -183,10 +189,12 @@ export async function sendMessage(receiverId: string, content: string, image?: s
 
 export async function clearConversation(otherUserId: string) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) throw new Error("Unauthorized");
+    if (!session?.user) throw new Error("Unauthorized");
 
     // @ts-ignore
-    const userId = session.user.id;
+    const userId = session.user.id as string;
+
+    if (!userId) throw new Error("Unauthorized");
 
     // "Clear" messages (hide content, keep in list if desired, but getMessages hides them)
     // Actually, getConversations logic above handles 'cleared' messages as visible in list but empty content.
@@ -208,10 +216,12 @@ export async function clearConversation(otherUserId: string) {
 
 export async function deleteConversation(otherUserId: string) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) throw new Error("Unauthorized");
+    if (!session?.user) throw new Error("Unauthorized");
 
     // @ts-ignore
-    const userId = session.user.id;
+    const userId = session.user.id as string;
+
+    if (!userId) throw new Error("Unauthorized");
 
     // "Soft delete" messsages (Remove from list)
     await prisma.message.updateMany({
