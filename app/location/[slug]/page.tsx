@@ -101,7 +101,7 @@ export default async function LocationPage({ params, searchParams }: PageProps) 
     }
 
     let googleId = slug;
-    let locationEntries = [];
+    let locationEntries: any[] = [];
     let totalCount = 0;
 
     if (dbLocation) {

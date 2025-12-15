@@ -51,6 +51,8 @@ export default async function UserProfilePage({ params, searchParams }: UserPage
     }
 
     const session = await getServerSession(authOptions);
+    const userId = session?.user?.id ? (session.user.id as string) : null;
+
     // Check if the current viewer is the owner of this profile
     const isOwner = session?.user?.email === user.email;
 
@@ -256,7 +258,7 @@ export default async function UserProfilePage({ params, searchParams }: UserPage
                                             <EntryCard
                                                 entry={entry}
                                                 // @ts-ignore
-                                                currentUserId={session?.user?.id || session?.user?.image} // Fallback trick if ID missing in types, need to fix types eventually
+                                                currentUserId={userId}
                                             />
                                         </div>
                                     ))}
