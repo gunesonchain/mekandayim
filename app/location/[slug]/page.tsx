@@ -90,7 +90,7 @@ async function getLocationData(slugOrId: string, page: number = 1) {
 }
 
 export default async function LocationPage({ params, searchParams }: PageProps) {
-    const slug = decodeURIComponent(params.params?.slug || params.slug); // Handle potential double param wrapping
+    const slug = decodeURIComponent(params.slug);
     const page = typeof searchParams.page === 'string' ? parseInt(searchParams.page) : 1;
 
     // Fetch DB Data
