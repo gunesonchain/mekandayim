@@ -31,7 +31,7 @@ export default async function DMUserPage({ params }: { params: { userId: string 
             <ChatWindow
                 initialMessages={messages}
                 otherUser={otherUser}
-                currentUserId={session.user.id}
+                currentUserId={userId}
             />
         </div>
     );
