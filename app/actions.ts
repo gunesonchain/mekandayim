@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { hash } from "bcrypt";
+import { hash } from "bcryptjs";
 
 import { slugify } from "@/lib/utils";
 import { getPlaceDetails } from "@/lib/google-places";
