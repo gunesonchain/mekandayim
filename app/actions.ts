@@ -340,12 +340,16 @@ export async function getUnreadMessageCount(userId: string) {
 
 export async function deleteEntry(entryId: string, locationSlug: string) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user) {
         return { error: 'Oturum açmanız gerekiyor.' };
     }
 
     // @ts-ignore
-    const userId = session.user.id;
+    const userId = session.user.id as string;
+
+    if (!userId) {
+        return { error: 'Oturum açmanız gerekiyor.' };
+    }
 
     try {
         const entry = await prisma.entry.findUnique({
