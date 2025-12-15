@@ -11,7 +11,11 @@ export const dynamic = 'force-dynamic';
 
 export default async function DMUserPage({ params }: { params: { userId: string } }) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) redirect('/api/auth/signin');
+    if (!session?.user) redirect('/api/auth/signin');
+
+    // @ts-ignore
+    const userId = session.user.id;
+    if (!userId) redirect('/api/auth/signin');
 
     const otherUser = await prisma.user.findUnique({
         where: { id: params.userId },
