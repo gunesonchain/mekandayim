@@ -17,7 +17,7 @@ export default async function DMLayout({
     const conversations = await getConversations();
 
     return (
-        <div className="container mx-auto max-w-5xl h-[calc(100vh-80px)] md:h-[calc(100vh-180px)] md:py-4">
+        <div className="fixed inset-0 top-[64px] z-0 md:static md:z-auto md:h-[calc(100vh-180px)] md:py-4 container mx-auto max-w-5xl h-[calc(100dvh-64px)]">
             <div className="flex h-full bg-black/40 backdrop-blur-xl md:border md:border-white/10 md:rounded-2xl overflow-hidden shadow-2xl">
 
                 {/* Sidebar - Hidden on mobile if viewing a chat (handled via CSS/Logic usually, but here commonly standard logic is tricky in RSC) 

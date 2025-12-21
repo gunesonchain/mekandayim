@@ -44,6 +44,8 @@ export default function ChatWindow({ initialMessages, otherUser, currentUserId }
                     // React state setter identity check handles strict equality, objects are new ref though.
 
                     // Merge: fetched are authoritative, optimism are appended if not yet in fetched
+                    if (!latestMessages || !Array.isArray(latestMessages)) return currentMessages;
+
                     return [...latestMessages, ...optimism];
                 });
             } catch (error) {
@@ -160,7 +162,7 @@ export default function ChatWindow({ initialMessages, otherUser, currentUserId }
     };
 
     return (
-        <div className="flex flex-col h-full bg-black/20 backdrop-blur-3xl">
+        <div className="flex flex-col h-full bg-black/20 backdrop-blur-3xl relative overflow-hidden">
             {/* Chat Header */}
             <div className="p-4 border-b border-white/10 flex items-center justify-between bg-black/40 sticky top-0 z-10">
                 <div className="flex items-center gap-3">
