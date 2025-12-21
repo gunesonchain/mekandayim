@@ -19,7 +19,7 @@ export function NotificationProvider({
     children: React.ReactNode;
     initialCount?: number;
 }) {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const [unreadCount, setUnreadCount] = useState(initialCount);
 
     // Sync initialCount if it changes (e.g. on navigation/refresh)
@@ -29,7 +29,7 @@ export function NotificationProvider({
 
     // Polling for unread messages every 15 seconds
     useEffect(() => {
-        if (!session?.user) return;
+        if (status !== 'authenticated' || !session?.user) return;
 
         const poll = async () => {
             // @ts-ignore
@@ -40,13 +40,10 @@ export function NotificationProvider({
             }
         };
 
-        // Initial poll after mount (optional, to ensure freshness)
-        // poll(); 
-
         const intervalId = setInterval(poll, 15000); // 15 seconds
 
         return () => clearInterval(intervalId);
-    }, [session]);
+    }, [session, status]);
 
     const decrementCount = () => {
         setUnreadCount(prev => Math.max(0, prev - 1));

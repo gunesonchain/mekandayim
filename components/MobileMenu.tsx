@@ -37,13 +37,29 @@ export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps
     // Prevent body scroll when menu is open
     useEffect(() => {
         if (isOpen) {
+            // Save current scroll position
+            const scrollY = window.scrollY;
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${scrollY}px`;
+            document.body.style.width = '100%';
             document.body.style.overflow = 'hidden';
         } else {
-            document.body.style.overflow = 'unset';
+            // Restore scroll position
+            const scrollY = document.body.style.top;
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            document.body.style.overflow = '';
+            if (scrollY) {
+                window.scrollTo(0, parseInt(scrollY || '0') * -1);
+            }
         }
 
         return () => {
-            document.body.style.overflow = 'unset';
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            document.body.style.overflow = '';
         };
     }, [isOpen]);
 
@@ -118,7 +134,8 @@ export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps
 
                                     <button
                                         onClick={() => {
-                                            signOut({ callbackUrl: '/' });
+                                            const callbackUrl = `${window.location.origin}/`;
+                                            signOut({ callbackUrl, redirect: true });
                                             onClose();
                                         }}
                                         className="flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-left"

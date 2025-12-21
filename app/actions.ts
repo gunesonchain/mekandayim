@@ -200,6 +200,37 @@ export async function registerUser(formData: FormData) {
         return { error: 'Lütfen tüm alanları doldurun.' };
     }
 
+    // STRICT USERNAME VALIDATION
+    const processedUsername = username.toLowerCase().trim();
+
+    // Regex: Only lowercase letters, numbers, underscores and periods.
+    const usernameRegex = /^[a-z0-9_.]+$/;
+    // Strict Email Regex: Standard-compliant but strict enough for common cases
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    const errors: Record<string, string> = {};
+
+    if (!usernameRegex.test(processedUsername)) {
+        errors.username = 'Sadece küçük harf, rakam, alt tire (_) ve nokta (.)';
+    } else if (processedUsername.length < 3 || processedUsername.length > 20) {
+        errors.username = 'Kullanıcı adı 3-20 karakter arasında olmalıdır.';
+    }
+
+    if (!emailRegex.test(email)) {
+        errors.email = 'Lütfen geçerli bir e-posta adresi giriniz.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+        // Return errors in a structured way that the frontend can parse, 
+        // OR return a text that indicates which field failed if we want to keep simple.
+        // But to support "red text under field", let's return a specific structure.
+        // Since the return type was { error?: string, success?: boolean... }, 
+        // let's add an optional 'fieldErrors' property.
+        // However, typescript might complain if I don't update the function signature return type explicitly, 
+        // but 'server actions' allow returning any serializable object.
+        return { error: 'Validasyon hatası', fieldErrors: errors };
+    }
+
     try {
         const existing = await prisma.user.findFirst({
             where: {
@@ -218,7 +249,7 @@ export async function registerUser(formData: FormData) {
 
         const newUser = await prisma.user.create({
             data: {
-                username,
+                username: processedUsername, // Use validated, lowercase username
                 email,
                 password: hashedPassword,
                 emailVerified: new Date() // AUTO-VERIFY for now

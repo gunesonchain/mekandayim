@@ -9,12 +9,14 @@ import { signIn } from 'next-auth/react';
 
 export default function RegisterPage() {
     const router = useRouter();
-    const [error, setError] = useState('');
+    const [generalError, setGeneralError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState<{ username?: string; email?: string }>({});
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (formData: FormData) => {
         setIsLoading(true);
-        setError('');
+        setGeneralError('');
+        setFieldErrors({});
 
         const username = formData.get('username') as string;
         const password = formData.get('password') as string;
@@ -22,7 +24,12 @@ export default function RegisterPage() {
         const res = await registerUser(formData);
 
         if (res?.error) {
-            setError(res.error);
+            // Check if we have structured field errors
+            if (res.fieldErrors) {
+                setFieldErrors(res.fieldErrors as any);
+            } else {
+                setGeneralError(res.error);
+            }
             setIsLoading(false);
         } else {
             // Auto sign in
@@ -56,9 +63,9 @@ export default function RegisterPage() {
 
             <div className="w-full max-w-sm bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-xl">
                 <form action={handleSubmit} className="flex flex-col gap-4">
-                    {error && (
+                    {generalError && (
                         <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-xs p-3 rounded-lg">
-                            {error}
+                            {generalError}
                         </div>
                     )}
 
@@ -67,9 +74,13 @@ export default function RegisterPage() {
                         <input
                             name="username"
                             type="text"
-                            className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 focus:outline-none transition-colors"
+                            className={`w-full bg-black/50 border rounded-lg p-3 text-white focus:outline-none transition-colors ${fieldErrors.username ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-purple-500'
+                                }`}
                             required
                         />
+                        {fieldErrors.username && (
+                            <p className="text-[10px] text-red-400 mt-1">{fieldErrors.username}</p>
+                        )}
                     </div>
 
                     <div>
@@ -77,9 +88,13 @@ export default function RegisterPage() {
                         <input
                             name="email"
                             type="email"
-                            className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 focus:outline-none transition-colors"
+                            className={`w-full bg-black/50 border rounded-lg p-3 text-white focus:outline-none transition-colors ${fieldErrors.email ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-purple-500'
+                                }`}
                             required
                         />
+                        {fieldErrors.email && (
+                            <p className="text-[10px] text-red-400 mt-1">{fieldErrors.email}</p>
+                        )}
                     </div>
 
                     <div>

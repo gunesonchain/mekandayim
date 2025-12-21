@@ -75,7 +75,10 @@ export default function Header() {
                                     Profilim
                                 </Link>
                                 <button
-                                    onClick={() => signOut({ callbackUrl: '/' })}
+                                    onClick={() => {
+                                        const callbackUrl = `${window.location.origin}/`;
+                                        signOut({ callbackUrl, redirect: true });
+                                    }}
                                     className="text-sm font-medium text-gray-400 hover:text-red-400 transition-colors"
                                 >
                                     Çıkış Yap
