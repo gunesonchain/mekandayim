@@ -11,6 +11,7 @@ import Link from "next/link";
 import MobileEntryWrapper from "@/components/MobileEntryWrapper";
 import PaginationControls from "@/components/PaginationControls";
 import { Metadata, ResolvingMetadata } from "next";
+import HighlightWrapper from "@/components/HighlightWrapper";
 
 interface PageProps {
     params: { slug: string };
@@ -181,14 +182,11 @@ export default async function LocationPage({ params, searchParams }: PageProps) 
                         </div>
                     ) : (
                         <>
-                            {locationEntries.map((entry) => (
-                                <EntryCard
-                                    key={entry.id}
-                                    entry={entry}
-                                    // @ts-ignore
-                                    currentUserId={session?.user?.id || session?.user?.image}
-                                />
-                            ))}
+                            <HighlightWrapper
+                                entries={locationEntries}
+                                // @ts-ignore
+                                currentUserId={session?.user?.id || session?.user?.image}
+                            />
 
                             <PaginationControls
                                 currentPage={page}
