@@ -1,7 +1,7 @@
 'use client';
 
 import { Entry, User, Like, Location } from '@prisma/client';
-import { MessageCircle, Trash2, Share2 } from 'lucide-react';
+import { MessageCircle, Trash2, Share2, Flag } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow, isToday, isYesterday, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -23,9 +23,10 @@ interface EntryCardProps {
     currentUserId?: string;
     locationSlug?: string;
     isHighlighted?: boolean;
+    entryIndex?: number; // Position in the full list
 }
 
-export default function EntryCard({ entry, currentUserId, isHighlighted = false }: EntryCardProps) {
+export default function EntryCard({ entry, currentUserId, isHighlighted = false, entryIndex }: EntryCardProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [showCopied, setShowCopied] = useState(false);
     const router = useRouter();
@@ -69,7 +70,18 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false 
     };
 
     const handleShare = async () => {
-        const shareUrl = `${window.location.origin}/location/${(entry.location as any)?.slug || 'unknown'}#${entry.id}`;
+        // Get current page path
+        const currentPath = window.location.pathname;
+
+        // Calculate page number if entryIndex is provided
+        let shareUrl = `${window.location.origin}${currentPath}`;
+        if (typeof entryIndex === 'number') {
+            const pageNum = Math.floor(entryIndex / 10) + 1;
+            if (pageNum > 1) {
+                shareUrl += `?page=${pageNum}`;
+            }
+        }
+        shareUrl += `#${entry.id}`;
 
         try {
             await navigator.clipboard.writeText(shareUrl);
@@ -81,6 +93,10 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false 
         }
     };
 
+    const handleReport = () => {
+        alert('Şikayet özelliği yakında eklenecek.');
+    };
+
     if (isDeleting) return null;
 
     return (
@@ -90,7 +106,7 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false 
                 }`}
         >
             {/* Header: User info, timestamp, and actions */}
-            <div className="flex justify-between items-center mb-3">
+            <div className="flex justify-between items-center mb-2.5">
                 {/* Left: Avatar + Username + Timestamp */}
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Link href={`/user/${entry.user.username}`}>
@@ -103,18 +119,40 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false 
                             )}
                         </div>
                     </Link>
-                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                    <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
                         <Link href={`/user/${entry.user.username}`} className="font-medium text-purple-400 text-sm hover:underline hover:text-purple-300 transition-colors flex-shrink-0">
                             @{entry.user.username}
                         </Link>
-                        <span className="text-[11px] text-gray-500 flex-shrink-0">
+                        <span className="text-[11px] text-gray-500 flex-shrink-0 leading-none">
                             {dateDisplay}
                         </span>
                     </div>
                 </div>
 
-                {/* Right: Share + Delete buttons */}
+                {/* Right: Delete (owner) + Share + Report (non-owner) buttons */}
                 <div className="flex items-center gap-1 flex-shrink-0">
+                    {/* Delete button - only for owner */}
+                    {isOwner && (
+                        <button
+                            onClick={handleDelete}
+                            className="p-2 text-gray-500 hover:text-red-500 hover:bg-white/10 rounded-full transition-colors"
+                            title="İtirafı Sil"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    )}
+
+                    {/* Report button - only for non-owners */}
+                    {!isOwner && (
+                        <button
+                            onClick={handleReport}
+                            className="p-2 text-gray-500 hover:text-yellow-500 hover:bg-white/10 rounded-full transition-colors"
+                            title="Şikayet Et"
+                        >
+                            <Flag size={16} />
+                        </button>
+                    )}
+
                     {/* Share button - always visible */}
                     <div className="relative">
                         <button
@@ -130,25 +168,14 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false 
                             </div>
                         )}
                     </div>
-
-                    {/* Delete button - only for owner */}
-                    {isOwner && (
-                        <button
-                            onClick={handleDelete}
-                            className="p-2 text-gray-500 hover:text-red-500 hover:bg-white/10 rounded-full transition-colors"
-                            title="İtirafı Sil"
-                        >
-                            <Trash2 size={16} />
-                        </button>
-                    )}
                 </div>
             </div>
 
-            <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap break-words mb-3">
+            <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap break-words mb-2.5">
                 {entry.content}
             </p>
 
-            <div className="flex items-center gap-4 border-t border-white/5 pt-2">
+            <div className="flex items-center gap-4 border-t border-white/5 pt-2.5">
                 <LikeButton
                     entryId={entry.id}
                     initialLikeCount={likeCount}

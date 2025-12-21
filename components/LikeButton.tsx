@@ -18,12 +18,17 @@ export default function LikeButton({ entryId, initialLikeCount, initialIsLiked, 
     const [likeCount, setLikeCount] = useState(initialLikeCount);
     const [isLiked, setIsLiked] = useState(initialIsLiked);
     const [isLoading, setIsLoading] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
 
     const handleToggle = async () => {
         if (isGuest) return; // Explicitly prevent action
 
         if (isLoading) return;
         setIsLoading(true);
+
+        // Trigger animation
+        setIsAnimating(true);
+        setTimeout(() => setIsAnimating(false), 300);
 
         // ... rest of the code is unchanged ...
         // Optimistic update
@@ -59,8 +64,12 @@ export default function LikeButton({ entryId, initialLikeCount, initialIsLiked, 
             className={`flex items-center gap-1.5 text-xs transition-all ${isLiked ? 'text-pink-500' : 'text-gray-500 hover:text-pink-400'
                 } ${isGuest ? 'opacity-50 cursor-default hover:text-gray-500' : ''}`}
         >
-            <Heart size={16} className={isLiked ? 'fill-pink-500' : ''} />
-            <span className="font-medium">{likeCount}</span>
+            <Heart
+                size={16}
+                className={`transition-all duration-300 ${isLiked ? 'fill-pink-500' : ''} ${isAnimating ? 'scale-125' : 'scale-100'
+                    }`}
+            />
+            <span className="font-medium transition-all duration-200">{likeCount}</span>
         </button>
     );
 }

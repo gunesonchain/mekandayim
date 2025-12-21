@@ -186,6 +186,7 @@ export default async function LocationPage({ params, searchParams }: PageProps) 
                                 entries={locationEntries}
                                 // @ts-ignore
                                 currentUserId={session?.user?.id || session?.user?.image}
+                                currentPage={page}
                             />
 
                             <PaginationControls

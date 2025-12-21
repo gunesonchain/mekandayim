@@ -1,43 +1,52 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import EntryCard from './EntryCard';
 
 interface HighlightWrapperProps {
     entries: any[];
     currentUserId?: string;
+    currentPage?: number;
 }
 
-export default function HighlightWrapper({ entries, currentUserId }: HighlightWrapperProps) {
+export default function HighlightWrapper({ entries, currentUserId, currentPage = 1 }: HighlightWrapperProps) {
+    const [highlightedId, setHighlightedId] = useState<string | null>(null);
     const hasScrolled = useRef(false);
 
     useEffect(() => {
-        // Only run on client side
-        if (typeof window === 'undefined' || hasScrolled.current) return;
-
+        // Get hash from URL
         const hash = window.location.hash.slice(1); // Remove #
         if (!hash) return;
 
-        // Small delay to ensure DOM is ready
-        setTimeout(() => {
-            const element = document.getElementById(hash);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                hasScrolled.current = true;
-            }
-        }, 300);
-    }, []);
+        setHighlightedId(hash);
 
-    const hash = typeof window !== 'undefined' ? window.location.hash.slice(1) : '';
+        // Scroll to element after a delay to ensure DOM is ready
+        if (!hasScrolled.current) {
+            const scrollTimeout = setTimeout(() => {
+                const element = document.getElementById(hash);
+                if (element) {
+                    element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                    hasScrolled.current = true;
+                }
+            }, 500);
+
+            return () => clearTimeout(scrollTimeout);
+        }
+    }, []);
 
     return (
         <>
-            {entries.map((entry) => (
+            {entries.map((entry, idx) => (
                 <EntryCard
                     key={entry.id}
                     entry={entry}
                     currentUserId={currentUserId}
-                    isHighlighted={entry.id === hash}
+                    isHighlighted={entry.id === highlightedId}
+                    entryIndex={(currentPage - 1) * 10 + idx}
                 />
             ))}
         </>
