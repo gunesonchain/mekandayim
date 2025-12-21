@@ -9,6 +9,39 @@ interface LocationStatsProps {
 export default function LocationStats({ recentLocations, popularLocations }: LocationStatsProps) {
     return (
         <div className="grid md:grid-cols-2 gap-4 md:gap-8 w-full">
+            {/* Recent Locations */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 backdrop-blur-sm">
+                <div className="flex items-center gap-2 mb-4 text-purple-400">
+                    <Clock size={20} />
+                    <h2 className="font-bold text-lg">Son Girilenler</h2>
+                </div>
+                <div className="space-y-3">
+                    {recentLocations.map((location) => (
+                        <Link
+                            key={location.id}
+                            href={`/location/${location.slug || location.googleId}`}
+                            className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors group relative overflow-hidden w-full"
+                        >
+                            <div className="w-12 h-12 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 group-hover:text-purple-400 transition-colors overflow-hidden border border-white/10">
+                                {location.photoUrl ? (
+                                    <img src={location.photoUrl} alt={location.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <MapPin size={20} />
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0 overflow-hidden">
+                                <span className="text-white font-medium text-base group-hover:text-purple-300 transition-colors truncate block">
+                                    {location.name}
+                                </span>
+                            </div>
+                        </Link>
+                    ))}
+                    {recentLocations.length === 0 && (
+                        <p className="text-gray-500 text-sm">Henüz entry girilmemiş.</p>
+                    )}
+                </div>
+            </div>
+
             {/* Popular Locations */}
             <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-2xl p-4 md:p-6 backdrop-blur-sm">
                 <div className="flex items-center gap-2 mb-4 text-orange-400">
@@ -76,39 +109,6 @@ export default function LocationStats({ recentLocations, popularLocations }: Loc
                     })}
                     {popularLocations.length === 0 && (
                         <p className="text-gray-500 text-sm">Henüz popüler mekan yok.</p>
-                    )}
-                </div>
-            </div>
-
-            {/* Recent Locations */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 backdrop-blur-sm">
-                <div className="flex items-center gap-2 mb-4 text-purple-400">
-                    <Clock size={20} />
-                    <h2 className="font-bold text-lg">Son Girilenler</h2>
-                </div>
-                <div className="space-y-3">
-                    {recentLocations.map((location) => (
-                        <Link
-                            key={location.id}
-                            href={`/location/${location.slug || location.googleId}`}
-                            className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors group relative overflow-hidden w-full"
-                        >
-                            <div className="w-12 h-12 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 group-hover:text-purple-400 transition-colors overflow-hidden border border-white/10">
-                                {location.photoUrl ? (
-                                    <img src={location.photoUrl} alt={location.name} className="w-full h-full object-cover" />
-                                ) : (
-                                    <MapPin size={20} />
-                                )}
-                            </div>
-                            <div className="flex-1 min-w-0 overflow-hidden">
-                                <span className="text-white font-medium text-base group-hover:text-purple-300 transition-colors truncate block">
-                                    {location.name}
-                                </span>
-                            </div>
-                        </Link>
-                    ))}
-                    {recentLocations.length === 0 && (
-                        <p className="text-gray-500 text-sm">Henüz entry girilmemiş.</p>
                     )}
                 </div>
             </div>
