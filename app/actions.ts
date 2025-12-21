@@ -376,3 +376,16 @@ export async function deleteEntry(entryId: string, locationSlug: string) {
         return { error: 'Silme işlemi başarısız oldu.' };
     }
 }
+
+export async function getUserProfileImage(userId: string) {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { image: true }
+        });
+        return user?.image || null;
+    } catch (error) {
+        console.error('Error fetching user image:', error);
+        return null;
+    }
+}

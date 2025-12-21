@@ -5,17 +5,40 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
 import { registerUser } from '@/app/actions';
+import { signIn } from 'next-auth/react';
 
 export default function RegisterPage() {
     const router = useRouter();
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (formData: FormData) => {
+        setIsLoading(true);
+        setError('');
+
+        const username = formData.get('username') as string;
+        const password = formData.get('password') as string;
+
         const res = await registerUser(formData);
+
         if (res?.error) {
             setError(res.error);
+            setIsLoading(false);
         } else {
-            router.push('/auth/signin');
+            // Auto sign in
+            const loginRes = await signIn('credentials', {
+                redirect: false,
+                username,
+                password
+            });
+
+            if (loginRes?.ok) {
+                router.push('/');
+                router.refresh();
+            } else {
+                // Fallback if auto-login fails for some reason
+                router.push('/auth/signin');
+            }
         }
     };
 
@@ -71,9 +94,10 @@ export default function RegisterPage() {
 
                     <button
                         type="submit"
-                        className="mt-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition-colors"
+                        disabled={isLoading}
+                        className="mt-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Kayıt Ol
+                        {isLoading ? 'İşleniyor...' : 'Kayıt Ol'}
                     </button>
                 </form>
 

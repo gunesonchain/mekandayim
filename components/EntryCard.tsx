@@ -10,6 +10,7 @@ import LikeButton from './LikeButton';
 import { deleteEntry } from '@/app/actions';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useConfirmation } from './ConfirmationContext';
 
 interface EntryWithRelations extends Entry {
     user: User;
@@ -26,6 +27,7 @@ interface EntryCardProps {
 export default function EntryCard({ entry, currentUserId }: EntryCardProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const router = useRouter();
+    const { confirm } = useConfirmation();
 
     const date = new Date(entry.createdAt);
     // Safe access for likes in case schema/client isn't fully synced yet
@@ -45,7 +47,15 @@ export default function EntryCard({ entry, currentUserId }: EntryCardProps) {
     }
 
     const handleDelete = async () => {
-        if (!confirm('Bu itirafı silmek istediğinize emin misiniz?')) return;
+        const isConfirmed = await confirm({
+            title: 'İtirafı Sil',
+            description: 'Bu itirafı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
+            confirmText: 'Sil',
+            cancelText: 'Vazgeç',
+            isDestructive: true
+        });
+
+        if (!isConfirmed) return;
 
         setIsDeleting(true);
         // We assume we are on the location page so we need slug, but entry might not have location loaded?
@@ -81,18 +91,9 @@ export default function EntryCard({ entry, currentUserId }: EntryCardProps) {
 
     return (
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 transition-colors hover:bg-white/10 group relative">
-            {/* Delete Button for Owner */}
-            {isOwner && (
-                <button
-                    onClick={handleDelete}
-                    className="absolute top-4 right-4 text-gray-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                    title="İtirafı Sil"
-                >
-                    <Trash2 size={16} />
-                </button>
-            )}
 
-            <div className="flex justify-between items-start mb-3 pr-8">
+
+            <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
                     <Link href={`/user/${entry.user.username}`}>
                         <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarColor(entry.user.username)} flex items-center justify-center text-xs font-bold text-white overflow-hidden border border-white/10`}>
@@ -113,6 +114,16 @@ export default function EntryCard({ entry, currentUserId }: EntryCardProps) {
                     <span className="text-xs text-gray-500">
                         {dateDisplay}
                     </span>
+
+                    {isOwner && (
+                        <button
+                            onClick={handleDelete}
+                            className="text-gray-500 hover:text-red-500 transition-colors"
+                            title="İtirafı Sil"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    )}
                 </div>
             </div>
 

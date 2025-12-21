@@ -35,7 +35,7 @@ export default function Header() {
                             <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center">
                                 <MapPin size={18} className="text-white" />
                             </div>
-                            <span>Mekan<span className="text-purple-500">İtirafları</span> <span className="text-xs text-gray-500 ml-1">v2.0</span></span>
+                            <span>Mekan<span className="text-purple-500">İtirafları</span></span>
                         </Link>
                     </div>
 

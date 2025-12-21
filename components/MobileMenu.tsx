@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import SearchInput from './SearchInput';
 import { getAvatarColor } from '@/lib/utils';
 import { useNotification } from './NotificationContext';
+import { getUserProfileImage } from '@/app/actions';
+import { useState, useEffect } from 'react';
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -16,6 +18,34 @@ interface MobileMenuProps {
 
 export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps) {
     const { unreadCount } = useNotification();
+    const [profileImage, setProfileImage] = useState<string | null>(session?.user?.image || null);
+
+    useEffect(() => {
+        if (session?.user && !session.user.image) {
+            // @ts-ignore
+            const userId = session.user.id || session.user.sub;
+            if (userId) {
+                getUserProfileImage(userId).then(img => {
+                    if (img) setProfileImage(img);
+                });
+            }
+        } else if (session?.user?.image) {
+            setProfileImage(session.user.image);
+        }
+    }, [session]);
+
+    // Prevent body scroll when menu is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
 
     return (
         <AnimatePresence>
@@ -55,9 +85,9 @@ export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps
 
                                     <Link onClick={onClose} href="/profile" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors mb-2">
                                         <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(session.user?.username || session.user?.name)} flex items-center justify-center text-sm font-bold text-white overflow-hidden`}>
-                                            {session.user?.image ? (
+                                            {profileImage ? (
                                                 // eslint-disable-next-line @next/next/no-img-element
-                                                <img src={session.user.image} alt={session.user.name || ''} className="w-full h-full object-cover" />
+                                                <img src={profileImage} alt={session.user.name || ''} className="w-full h-full object-cover" />
                                             ) : (
                                                 session.user?.name?.[0]?.toUpperCase()
                                             )}

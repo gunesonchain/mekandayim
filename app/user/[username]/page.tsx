@@ -8,6 +8,7 @@ import { authOptions } from "@/lib/auth";
 import { getAvatarColor } from "@/lib/utils";
 import ProfileSettings from "@/components/ProfileSettings";
 import PaginationControls from "@/components/PaginationControls";
+import ProfileTabs from "@/components/ProfileTabs";
 
 interface UserPageProps {
     params: { username: string };
@@ -91,12 +92,12 @@ export default async function UserProfilePage({ params, searchParams }: UserPage
                     )}
                 </div>
 
-                <h1 className="text-3xl font-bold text-white mb-1">@{user.username}</h1>
+                <h1 className="text-3xl font-bold text-white mb-2">@{user.username}</h1>
                 {/* "Üye Profili" removed as requested */}
 
-                {user.bio && <p className="text-gray-400 text-sm max-w-[280px] mb-4 whitespace-pre-wrap break-words">{user.bio}</p>}
+                {user.bio && <p className="text-gray-400 text-sm max-w-[280px] mb-2 whitespace-pre-wrap break-words">{user.bio}</p>}
 
-                <div className="flex items-center gap-6 bg-white/5 px-6 py-3 rounded-2xl border border-white/5 backdrop-blur-sm mb-6">
+                <div className="flex items-center gap-6 bg-white/5 px-6 py-3 rounded-2xl border border-white/5 backdrop-blur-sm mb-6 mt-2">
                     <div className="flex flex-col items-center">
                         <span className="text-2xl font-bold text-white flex items-center gap-2">
                             {totalCount}
@@ -137,26 +138,7 @@ export default async function UserProfilePage({ params, searchParams }: UserPage
 
             {/* Owner Tabs */}
             {isOwner && (
-                <div className="flex border-b border-white/10 mb-6">
-                    <Link
-                        href={`/user/${user.username}?view=entries`}
-                        className={`flex-1 py-3 text-center text-sm font-medium transition-colors border-b-2 ${view === 'entries'
-                            ? 'border-purple-500 text-white'
-                            : 'border-transparent text-gray-500 hover:text-gray-300'
-                            }`}
-                    >
-                        İtiraflarım
-                    </Link>
-                    <Link
-                        href={`/user/${user.username}?view=settings`}
-                        className={`flex-1 py-3 text-center text-sm font-medium transition-colors border-b-2 ${view === 'settings'
-                            ? 'border-purple-500 text-white'
-                            : 'border-transparent text-gray-500 hover:text-gray-300'
-                            }`}
-                    >
-                        Profil Ayarları
-                    </Link>
-                </div>
+                <ProfileTabs username={user.username} />
             )}
 
             {/* Content Switch */}

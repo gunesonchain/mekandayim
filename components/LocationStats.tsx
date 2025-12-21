@@ -8,9 +8,9 @@ interface LocationStatsProps {
 
 export default function LocationStats({ recentLocations, popularLocations }: LocationStatsProps) {
     return (
-        <div className="grid md:grid-cols-2 gap-8 w-full">
+        <div className="grid md:grid-cols-2 gap-4 md:gap-8 w-full">
             {/* Popular Locations */}
-            <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-2xl p-6 backdrop-blur-sm">
+            <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-2xl p-4 md:p-6 backdrop-blur-sm">
                 <div className="flex items-center gap-2 mb-4 text-orange-400">
                     <Flame size={20} />
                     <h2 className="font-bold text-lg">Popüler Mekanlar</h2>
@@ -54,7 +54,7 @@ export default function LocationStats({ recentLocations, popularLocations }: Loc
                                 </div>
 
                                 <div className="relative z-10 flex items-center justify-between flex-1 min-w-0">
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col min-w-0">
                                         <span className={`font-bold text-lg truncate pr-3 ${index === 0 ? "text-red-400" : index === 1 ? "text-orange-400" : index === 2 ? "text-amber-200" : "text-white"}`}>
                                             {location.name}
                                         </span>
@@ -81,7 +81,7 @@ export default function LocationStats({ recentLocations, popularLocations }: Loc
             </div>
 
             {/* Recent Locations */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 backdrop-blur-sm">
                 <div className="flex items-center gap-2 mb-4 text-purple-400">
                     <Clock size={20} />
                     <h2 className="font-bold text-lg">Son Girilenler</h2>
@@ -91,7 +91,7 @@ export default function LocationStats({ recentLocations, popularLocations }: Loc
                         <Link
                             key={location.id}
                             href={`/location/${location.slug || location.googleId}`}
-                            className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors group"
+                            className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors group relative overflow-hidden w-full"
                         >
                             <div className="w-12 h-12 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 group-hover:text-purple-400 transition-colors overflow-hidden border border-white/10">
                                 {location.photoUrl ? (
@@ -100,9 +100,11 @@ export default function LocationStats({ recentLocations, popularLocations }: Loc
                                     <MapPin size={20} />
                                 )}
                             </div>
-                            <span className="text-white font-medium text-base group-hover:text-purple-300 transition-colors truncate">
-                                {location.name}
-                            </span>
+                            <div className="flex-1 min-w-0 overflow-hidden">
+                                <span className="text-white font-medium text-base group-hover:text-purple-300 transition-colors truncate block">
+                                    {location.name}
+                                </span>
+                            </div>
                         </Link>
                     ))}
                     {recentLocations.length === 0 && (
