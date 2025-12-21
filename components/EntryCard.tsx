@@ -1,7 +1,7 @@
 'use client';
 
 import { Entry, User, Like, Location } from '@prisma/client';
-import { MessageCircle, Trash2 } from 'lucide-react';
+import { MessageCircle, Trash2, MoreVertical, Flag } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow, isToday, isYesterday, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -9,7 +9,7 @@ import { getAvatarColor } from '@/lib/utils';
 import LikeButton from './LikeButton';
 import { deleteEntry } from '@/app/actions';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useConfirmation } from './ConfirmationContext';
 
 interface EntryWithRelations extends Entry {
@@ -21,16 +21,17 @@ interface EntryWithRelations extends Entry {
 interface EntryCardProps {
     entry: EntryWithRelations;
     currentUserId?: string;
-    locationSlug?: string; // Optional prompt to verify if it's available or need to be passed
+    locationSlug?: string;
 }
 
 export default function EntryCard({ entry, currentUserId }: EntryCardProps) {
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const { confirm } = useConfirmation();
 
     const date = new Date(entry.createdAt);
-    // Safe access for likes in case schema/client isn't fully synced yet
     const likeCount = entry.likes?.length || 0;
     const isLiked = currentUserId && entry.likes ? entry.likes.some(like => like.userId === currentUserId) : false;
     const isOwner = currentUserId === entry.userId;
@@ -38,7 +39,6 @@ export default function EntryCard({ entry, currentUserId }: EntryCardProps) {
     let dateDisplay;
     if (isToday(date) || isYesterday(date)) {
         dateDisplay = formatDistanceToNow(date, { addSuffix: true, locale: tr });
-        // Simplify "less than a minute"
         if (dateDisplay === 'bir dakikadan az önce') {
             dateDisplay = 'az önce';
         }
@@ -46,7 +46,25 @@ export default function EntryCard({ entry, currentUserId }: EntryCardProps) {
         dateDisplay = format(date, 'd MMMM yyyy HH:mm', { locale: tr });
     }
 
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowMenu(false);
+            }
+        };
+
+        if (showMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showMenu]);
+
     const handleDelete = async () => {
+        setShowMenu(false);
         const isConfirmed = await confirm({
             title: 'İtirafı Sil',
             description: 'Bu itirafı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
@@ -58,25 +76,6 @@ export default function EntryCard({ entry, currentUserId }: EntryCardProps) {
         if (!isConfirmed) return;
 
         setIsDeleting(true);
-        // We assume we are on the location page so we need slug, but entry might not have location loaded?
-        // Wait, revalidatePath requires slug. 
-        // If entry.location is not loaded, we might have issue.
-        // However, usually we can rely on page refresh.
-        // Or we pass slug as prop. 
-        // Let's rely on passed prop OR try to define it.
-        // The action needs slug. 
-        // Hack: parse from URL or pass as prop?
-        // Let's assume entry has location or we pass it.
-        // Checking usage of EntryCard... usually in [slug]/page.tsx.
-        // Let's try to get slug from URL via useParams?
-        // Or just pass generic revalidate path if empty string?
-
-        // Let's use window.location.pathname.
-        // Or better: update the deleteEntry action to revalidate generic logic.
-        // For now let's pass a placeholder slug if missing, handle client side refresh.
-
-        // Actually best practice: client component uses props. 
-        // But for minimal friction now:
         const response = await deleteEntry(entry.id, (entry.location as any)?.slug || 'unknown');
 
         if (response?.error) {
@@ -87,16 +86,21 @@ export default function EntryCard({ entry, currentUserId }: EntryCardProps) {
         }
     };
 
-    if (isDeleting) return null; // Optimistic remove
+    const handleReport = () => {
+        setShowMenu(false);
+        alert('Şikayet özelliği yakında eklenecek.');
+    };
+
+    if (isDeleting) return null;
 
     return (
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 transition-colors hover:bg-white/10 group relative">
-
-
-            <div className="flex justify-between items-start mb-3">
-                <div className="flex items-center gap-2">
+            {/* Header: User info, timestamp, and menu aligned on same row */}
+            <div className="flex justify-between items-center mb-3">
+                {/* Left: Avatar + Username + Timestamp */}
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Link href={`/user/${entry.user.username}`}>
-                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarColor(entry.user.username)} flex items-center justify-center text-xs font-bold text-white overflow-hidden border border-white/10`}>
+                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarColor(entry.user.username)} flex items-center justify-center text-xs font-bold text-white overflow-hidden border border-white/10 flex-shrink-0`}>
                             {(entry.user as any).image ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={(entry.user as any).image} alt={entry.user.username} className="w-full h-full object-cover" />
@@ -105,24 +109,48 @@ export default function EntryCard({ entry, currentUserId }: EntryCardProps) {
                             )}
                         </div>
                     </Link>
-                    <Link href={`/user/${entry.user.username}`} className="font-medium text-purple-400 text-sm hover:underline hover:text-purple-300 transition-colors">
-                        @{entry.user.username}
-                    </Link>
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                        <Link href={`/user/${entry.user.username}`} className="font-medium text-purple-400 text-sm hover:underline hover:text-purple-300 transition-colors flex-shrink-0">
+                            @{entry.user.username}
+                        </Link>
+                        <span className="text-xs text-gray-500 flex-shrink-0">
+                            {dateDisplay}
+                        </span>
+                    </div>
                 </div>
-                {/* Right side meta */}
-                <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500">
-                        {dateDisplay}
-                    </span>
 
-                    {isOwner && (
-                        <button
-                            onClick={handleDelete}
-                            className="text-gray-500 hover:text-red-500 transition-colors"
-                            title="İtirafı Sil"
-                        >
-                            <Trash2 size={16} />
-                        </button>
+                {/* Right: 3-dot menu */}
+                <div className="relative flex-shrink-0" ref={menuRef}>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowMenu(!showMenu);
+                        }}
+                        className="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                        title="Seçenekler"
+                    >
+                        <MoreVertical size={16} />
+                    </button>
+
+                    {showMenu && (
+                        <div className="absolute right-0 top-full mt-2 w-48 bg-gray-900 border border-white/10 rounded-xl shadow-xl overflow-hidden z-50">
+                            {isOwner && (
+                                <button
+                                    onClick={handleDelete}
+                                    className="flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors w-full text-left"
+                                >
+                                    <Trash2 size={16} />
+                                    İtirafı Sil
+                                </button>
+                            )}
+                            <button
+                                onClick={handleReport}
+                                className={`flex items-center gap-2 px-4 py-3 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors w-full text-left ${isOwner ? 'border-t border-white/5' : ''}`}
+                            >
+                                <Flag size={16} />
+                                Şikayet Et
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
