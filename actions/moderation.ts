@@ -176,10 +176,11 @@ export async function dismissAllReportsForEntry(entryId: string, _formData?: For
     }
 }
 
-export async function restoreReportGroup(entryId: string) {
+
+export async function restoreReportGroup(entryId: string, _formData?: FormData) {
     const user = await getSessionUser();
     // @ts-ignore
-    if (!user || user.role !== 'MODERATOR') return { error: "Yetkisiz işlem." };
+    if (!user || user.role !== 'MODERATOR') return;
 
     try {
         // 1. Restore the entry if it was deleted
@@ -195,17 +196,15 @@ export async function restoreReportGroup(entryId: string) {
         });
 
         revalidatePath('/reports');
-        return { success: true };
     } catch (error) {
         console.error(error);
-        return { error: "Geri alma işlemi başarısız." };
     }
 }
 
-export async function banUser(userId: string) {
+export async function banUser(userId: string, _formData?: FormData) {
     const user = await getSessionUser();
     // @ts-ignore
-    if (!user || user.role !== 'MODERATOR') return { error: "Yetkisiz işlem." };
+    if (!user || user.role !== 'MODERATOR') return;
 
     try {
         // Ban user
@@ -215,8 +214,7 @@ export async function banUser(userId: string) {
         });
 
         revalidatePath('/reports');
-        return { success: true };
     } catch (error) {
-        return { error: "Ban işlemi başarısız oldu." };
+        console.error("Ban Error:", error);
     }
 }
