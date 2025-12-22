@@ -121,7 +121,7 @@ export async function getReports() {
 export async function dismissReport(reportId: string, _formData?: FormData) {
     const user = await getSessionUser();
     // @ts-ignore
-    if (!user || user.role !== 'MODERATOR') return { error: "Yetkisiz işlem." };
+    if (!user || user.role !== 'MODERATOR') return;
 
     try {
         await prisma.report.update({
@@ -129,16 +129,15 @@ export async function dismissReport(reportId: string, _formData?: FormData) {
             data: { status: 'DISMISSED' }
         });
         revalidatePath('/reports');
-        return { success: true };
     } catch (error) {
-        return { error: "İşlem başarısız." };
+        console.error("Dismiss Report Error:", error);
     }
 }
 
 export async function deleteEntryAndResolveReport(entryId: string, _formData?: FormData) {
     const user = await getSessionUser();
     // @ts-ignore
-    if (!user || user.role !== 'MODERATOR') return { error: "Yetkisiz işlem." };
+    if (!user || user.role !== 'MODERATOR') return;
 
     try {
         console.log("Attempting soft delete for entry:", entryId);
@@ -156,17 +155,15 @@ export async function deleteEntryAndResolveReport(entryId: string, _formData?: F
         });
 
         revalidatePath('/reports');
-        return { success: true };
     } catch (error) {
         console.error("Delete Action Failed:", error);
-        return { error: "Silme işlemi başarısız." };
     }
 }
 
 export async function dismissAllReportsForEntry(entryId: string, _formData?: FormData) {
     const user = await getSessionUser();
     // @ts-ignore
-    if (!user || user.role !== 'MODERATOR') return { error: "Yetkisiz işlem." };
+    if (!user || user.role !== 'MODERATOR') return;
 
     try {
         await prisma.report.updateMany({
@@ -174,9 +171,8 @@ export async function dismissAllReportsForEntry(entryId: string, _formData?: For
             data: { status: 'DISMISSED' }
         });
         revalidatePath('/reports');
-        return { success: true };
     } catch (error) {
-        return { error: "İşlem başarısız." };
+        console.error("Dismiss All Error:", error);
     }
 }
 
