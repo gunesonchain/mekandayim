@@ -117,7 +117,8 @@ export async function getReports() {
     }
 }
 
-export async function dismissReport(reportId: string) {
+
+export async function dismissReport(reportId: string, _formData?: FormData) {
     const user = await getSessionUser();
     // @ts-ignore
     if (!user || user.role !== 'MODERATOR') return { error: "Yetkisiz işlem." };
@@ -134,7 +135,7 @@ export async function dismissReport(reportId: string) {
     }
 }
 
-export async function deleteEntryAndResolveReport(entryId: string, reportId?: string) {
+export async function deleteEntryAndResolveReport(entryId: string, _formData?: FormData) {
     const user = await getSessionUser();
     // @ts-ignore
     if (!user || user.role !== 'MODERATOR') return { error: "Yetkisiz işlem." };
@@ -162,7 +163,7 @@ export async function deleteEntryAndResolveReport(entryId: string, reportId?: st
     }
 }
 
-export async function dismissAllReportsForEntry(entryId: string) {
+export async function dismissAllReportsForEntry(entryId: string, _formData?: FormData) {
     const user = await getSessionUser();
     // @ts-ignore
     if (!user || user.role !== 'MODERATOR') return { error: "Yetkisiz işlem." };
