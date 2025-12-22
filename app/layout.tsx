@@ -55,7 +55,11 @@ import ConditionalFooter from "@/components/ConditionalFooter";
 import AuthProvider from "@/components/AuthProvider";
 import { MobileLayoutProvider } from "@/components/MobileLayoutContext";
 import { NotificationProvider } from "@/components/NotificationContext";
+
+
 import { ConfirmationProvider } from "@/components/ConfirmationContext";
+import { ReportProvider } from "@/components/ReportContext";
+import { ToastProvider } from "@/components/ToastContext"; // Import ToastProvider
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getUnreadMessageCount } from "@/app/actions";
@@ -81,15 +85,19 @@ export default async function RootLayout({
             <body className={outfit.className + " flex flex-col min-h-screen bg-black text-white antialiased selection:bg-purple-500/30"}>
                 <AuthProvider>
                     <ConfirmationProvider>
-                        <NotificationProvider initialCount={unreadCount}>
-                            <MobileLayoutProvider>
-                                <Header />
-                                <div className="flex-1">
-                                    {children}
-                                </div>
-                                <ConditionalFooter />
-                            </MobileLayoutProvider>
-                        </NotificationProvider>
+                        <ReportProvider>
+                            <ToastProvider>
+                                <NotificationProvider initialCount={unreadCount}>
+                                    <MobileLayoutProvider>
+                                        <Header />
+                                        <div className="flex-1">
+                                            {children}
+                                        </div>
+                                        <ConditionalFooter />
+                                    </MobileLayoutProvider>
+                                </NotificationProvider>
+                            </ToastProvider>
+                        </ReportProvider>
                     </ConfirmationProvider>
                 </AuthProvider>
             </body>

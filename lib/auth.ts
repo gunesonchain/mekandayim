@@ -12,6 +12,9 @@ export const authOptions: NextAuthOptions = {
     pages: {
         signIn: '/auth/signin',
     },
+
+
+
     providers: [
         CredentialsProvider({
             name: "Credentials",
@@ -36,6 +39,7 @@ export const authOptions: NextAuthOptions = {
                     id: user.id,
                     name: user.username,
                     email: user.email,
+                    role: user.role, // Add role here
                 };
             }
         })
@@ -46,6 +50,8 @@ export const authOptions: NextAuthOptions = {
                 // Should use types augmentation, but for now ensure ID is passed
                 // @ts-ignore
                 session.user.id = token.id as string || token.sub as string;
+                // @ts-ignore
+                session.user.role = token.role as string;
                 // session.user.image can be used as fallback if needed, but 'id' is better standard
             }
             return session;
@@ -53,6 +59,8 @@ export const authOptions: NextAuthOptions = {
         async jwt({ token, user }) {
             if (user) {
                 token.id = user.id;
+                // @ts-ignore
+                token.role = user.role;
             }
             return token;
         }

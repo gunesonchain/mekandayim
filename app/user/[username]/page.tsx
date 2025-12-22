@@ -92,7 +92,18 @@ export default async function UserProfilePage({ params, searchParams }: UserPage
                     )}
                 </div>
 
-                <h1 className="text-3xl font-bold text-white mb-2">@{user.username}</h1>
+                <div className="flex items-center gap-2 mb-2">
+                    <h1 className="text-3xl font-bold text-white">@{user.username}</h1>
+                    {/* @ts-ignore */}
+                    {user.role === 'MODERATOR' && (
+                        <span
+                            className="bg-purple-500/20 text-purple-300 text-xs font-bold px-2 py-0.5 rounded border border-purple-500/20 cursor-default"
+                            title="Moderatör"
+                        >
+                            MOD
+                        </span>
+                    )}
+                </div>
                 {/* "Üye Profili" removed as requested */}
 
                 {user.bio && <p className="text-gray-400 text-sm max-w-[280px] mb-2 whitespace-pre-wrap break-words">{user.bio}</p>}

@@ -1,7 +1,7 @@
 'use client';
 
 import { Entry, User, Like, Location } from '@prisma/client';
-import { MessageCircle, Trash2, Share2, Flag } from 'lucide-react';
+import { MessageCircle, Trash2, Share, Flag } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow, isToday, isYesterday, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -11,6 +11,8 @@ import { deleteEntry } from '@/app/actions';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useConfirmation } from './ConfirmationContext';
+import { useReport } from './ReportContext';
+import { useToast } from './ToastContext'; // Import Hook
 
 interface EntryWithRelations extends Entry {
     user: User;
@@ -31,6 +33,8 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false,
     const [showCopied, setShowCopied] = useState(false);
     const router = useRouter();
     const { confirm } = useConfirmation();
+    const { report } = useReport();
+    const { showToast } = useToast();
 
     const date = new Date(entry.createdAt);
     const likeCount = entry.likes?.length || 0;
@@ -105,9 +109,8 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false,
             className={`bg-white/5 border border-white/10 rounded-xl p-4 mb-4 transition-all hover:bg-white/10 group relative ${isHighlighted ? 'animate-highlight' : ''
                 }`}
         >
-            {/* Header: User info, timestamp, and actions */}
+            {/* Header: User info & Timestamp only */}
             <div className="flex justify-between items-center mb-2.5">
-                {/* Left: Avatar + Username + Timestamp */}
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Link href={`/user/${entry.user.username}`}>
                         <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarColor(entry.user.username)} flex items-center justify-center text-xs font-bold text-white overflow-hidden border border-white/10 flex-shrink-0`}>
@@ -123,73 +126,109 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false,
                         <Link href={`/user/${entry.user.username}`} className="font-medium text-purple-400 text-sm hover:underline hover:text-purple-300 transition-colors flex-shrink-0">
                             @{entry.user.username}
                         </Link>
-                        <span className="text-[11px] text-gray-500 flex-shrink-0 leading-none">
+                        {/* @ts-ignore */}
+                        {entry.user.role === 'MODERATOR' && (
+                            <span title="Moderatör" className="inline-flex items-center justify-center bg-purple-500/20 text-purple-300 text-[10px] px-1.5 py-0.5 rounded border border-purple-500/30 cursor-default select-none ml-1">
+                                MOD
+                            </span>
+                        )}
+                        <span className="text-[11px] text-gray-500 flex-shrink-0 leading-none ml-1">
                             {dateDisplay}
                         </span>
                     </div>
                 </div>
+            </div>
 
-                {/* Right: Delete (owner) + Share + Report (non-owner) buttons */}
-                <div className="flex items-center gap-1 flex-shrink-0">
-                    {/* Delete button - only for owner */}
+            {/* Content */}
+            <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap break-words mb-3">
+                {entry.content}
+            </p>
+
+            {/* Footer: Actions */}
+            <div className="flex items-center justify-between border-t border-white/5 pt-3">
+
+                {/* Left Side: Like, Message, Report */}
+                <div className="flex items-center gap-2">
+                    <LikeButton
+                        entryId={entry.id}
+                        initialLikeCount={likeCount}
+                        initialIsLiked={isLiked}
+                        isGuest={!currentUserId}
+                    />
+
+                    <Link
+                        href={`/dm/${entry.userId}`}
+                        className={`flex items-center gap-1.5 transition-colors text-xs font-medium px-2 py-1.5 rounded-md hover:bg-white/5 ${!currentUserId || isOwner ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:text-purple-400'
+                            }`}
+                        onClick={(e) => {
+                            if (!currentUserId || isOwner) {
+                                e.preventDefault();
+                            }
+                        }}
+                        title={!currentUserId ? 'Mesaj atmak için giriş yapmalısın' : isOwner ? 'Kendine mesaj atamazsın' : 'Mesaj Gönder'}
+                    >
+                        <MessageCircle size={16} />
+                        <span className="font-medium">Mesaj Gönder</span>
+                    </Link>
+
+                    {/* Report button */}
+                    {!isOwner && (
+                        <button
+                            onClick={async () => {
+                                const reason = await report({
+                                    title: 'İtirafı Şikayet Et',
+                                    description: 'Bu itirafı neden şikayet ediyorsunuz? Lütfen kısaca açıklayın.'
+                                });
+
+                                if (reason) {
+                                    const { reportEntry } = await import('@/actions/moderation');
+                                    // @ts-ignore
+                                    const res = await reportEntry(entry.id, reason);
+                                    if (res?.error) {
+                                        showToast(res.error, 'error');
+                                    } else {
+                                        showToast('Şikayetiniz iletildi.', 'success');
+                                    }
+                                }
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-lg transition-colors"
+                            title="Şikayet Et"
+                        >
+                            <Flag size={16} />
+                        </button>
+                    )}
+                </div>
+
+                {/* Right Side: Delete (if owner) and Share (iOS Style Icon Only) */}
+                <div className="flex items-center gap-2">
+                    {/* Delete button (Moved here) */}
                     {isOwner && (
                         <button
                             onClick={handleDelete}
-                            className="p-2 text-gray-500 hover:text-red-500 hover:bg-white/10 rounded-full transition-colors"
+                            disabled={isDeleting}
+                            className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
                             title="İtirafı Sil"
                         >
                             <Trash2 size={16} />
                         </button>
                     )}
 
-                    {/* Report button - only for non-owners */}
-                    {!isOwner && (
-                        <button
-                            onClick={handleReport}
-                            className="p-2 text-gray-500 hover:text-yellow-500 hover:bg-white/10 rounded-full transition-colors"
-                            title="Şikayet Et"
-                        >
-                            <Flag size={16} />
-                        </button>
-                    )}
-
-                    {/* Share button - always visible */}
+                    {/* Share button - iOS Style (Icon Only) */}
                     <div className="relative">
                         <button
                             onClick={handleShare}
-                            className="p-2 text-gray-500 hover:text-purple-400 hover:bg-white/10 rounded-full transition-colors"
+                            className="flex items-center justify-center w-8 h-8 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all active:scale-90 group"
                             title="Paylaş"
                         >
-                            <Share2 size={16} />
+                            <Share size={15} className="group-hover:-translate-y-0.5 transition-transform" />
                         </button>
                         {showCopied && (
-                            <div className="absolute -top-8 right-0 bg-purple-600 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap">
-                                Link kopyalandı!
+                            <div className="absolute -top-8 right-0 bg-white text-black text-[10px] px-2 py-1 rounded font-bold shadow-lg whitespace-nowrap animate-in fade-in zoom-in duration-200 z-20">
+                                Kopyalandı
                             </div>
                         )}
                     </div>
                 </div>
-            </div>
-
-            <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap break-words mb-2.5">
-                {entry.content}
-            </p>
-
-            <div className="flex items-center gap-4 border-t border-white/5 pt-2.5">
-                <LikeButton
-                    entryId={entry.id}
-                    initialLikeCount={likeCount}
-                    initialIsLiked={isLiked}
-                    isGuest={!currentUserId}
-                />
-
-                <Link
-                    href={`/dm/${entry.userId}`}
-                    className="text-gray-400 hover:text-white flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all hover:bg-white/5"
-                >
-                    <MessageCircle size={14} />
-                    <span className="font-medium">Mesaj Gönder</span>
-                </Link>
             </div>
         </div>
     );

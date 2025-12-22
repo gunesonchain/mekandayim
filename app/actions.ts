@@ -342,7 +342,8 @@ export async function getHomepageStats() {
                 const entries24h = await prisma.entry.count({
                     where: {
                         locationId: loc.id,
-                        createdAt: { gte: oneDayAgo }
+                        createdAt: { gte: oneDayAgo },
+                        isDeleted: false
                     }
                 });
                 return { ...filledLoc, entries24h };

@@ -132,6 +132,7 @@ export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps
                                         Yeni İtiraf
                                     </Link>
 
+
                                     <button
                                         onClick={() => {
                                             const callbackUrl = `${window.location.origin}/`;
@@ -143,6 +144,16 @@ export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps
                                         <LogOut size={20} />
                                         Çıkış Yap
                                     </button>
+
+                                    {/* @ts-ignore */}
+                                    {session.user?.role === 'MODERATOR' && (
+                                        <div className="pt-2 mt-2 border-t border-white/10">
+                                            <Link onClick={onClose} href="/reports" className="flex items-center gap-3 px-4 py-3 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10 rounded-lg transition-colors">
+                                                <div className="w-5 h-5 flex items-center justify-center font-bold">!</div>
+                                                Şikayet Yönetimi
+                                            </Link>
+                                        </div>
+                                    )}
                                 </>
                             ) : (
                                 <>

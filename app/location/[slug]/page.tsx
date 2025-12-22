@@ -61,8 +61,8 @@ async function getLocationData(slugOrId: string, page: number = 1) {
     let location = await prisma.location.findUnique({
         where: { slug: slugOrId },
         include: {
-            _count: { select: { entries: true } },
             entries: {
+                where: { isDeleted: false },
                 include: { user: true, likes: true },
                 orderBy: { createdAt: 'desc' },
                 take: ITEMS_PER_PAGE,
@@ -71,23 +71,32 @@ async function getLocationData(slugOrId: string, page: number = 1) {
         }
     });
 
+    // Explicitly count non-deleted entries
+    let totalCount = 0;
+    if (location) {
+        totalCount = await prisma.entry.count({
+            where: {
+                locationId: location.id,
+                isDeleted: false
+            }
+        });
+    }
+
     // 2. If not found, try by Google ID (Migration/Legacy support)
     if (!location) {
         const byId = await prisma.location.findUnique({
             where: { googleId: slugOrId },
             include: {
-                // minimal fetch to check redirect
                 entries: { select: { id: true }, take: 0 }
             }
         });
 
         if (byId) {
-            // Found by ID, but we want to use slug. Signal redirect.
             return { redirect: `/location/${byId.slug}` };
         }
     }
 
-    return { location };
+    return { location, totalCount };
 }
 
 export default async function LocationPage({ params, searchParams }: PageProps) {
@@ -95,7 +104,7 @@ export default async function LocationPage({ params, searchParams }: PageProps) 
     const page = typeof searchParams.page === 'string' ? parseInt(searchParams.page) : 1;
 
     // Fetch DB Data
-    const { location: dbLocation, redirect: redirectPath } = await getLocationData(slug, page);
+    const { location: dbLocation, totalCount: dbTotalCount, redirect: redirectPath } = await getLocationData(slug, page);
 
     if (redirectPath) {
         redirect(redirectPath);
@@ -108,7 +117,16 @@ export default async function LocationPage({ params, searchParams }: PageProps) 
     if (dbLocation) {
         googleId = dbLocation.googleId;
         locationEntries = dbLocation.entries;
-        totalCount = dbLocation._count.entries;
+        totalCount = dbTotalCount || 0;
+    }
+
+    // PAGINATION REDIRECT FIX
+    // If we are on a page > 1, but there are no entries on this page
+    // AND there are total entries (meaning we just deleted the last one on this page)
+    if (page > 1 && locationEntries.length === 0 && totalCount > 0) {
+        const lastPage = Math.ceil(totalCount / 10);
+        // Redirect to the last valid page
+        redirect(`/location/${slug}?page=${lastPage}`);
     }
 
     // Fetch Google Data (Always fresh info)
