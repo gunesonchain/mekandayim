@@ -312,8 +312,14 @@ export default function ChatWindow({ initialMessages, initialHasMore, otherUser,
     return (
         // MAIN CONTAINER: Fixed Fullscreen on Mobile, Flex on Desktop
         // This structure ensures 100% viewport height usage without scroll leakage
-        <div className="fixed inset-0 z-50 flex flex-col bg-black lg:static lg:h-full lg:bg-black/20 lg:backdrop-blur-3xl lg:border lg:border-white/10 lg:rounded-2xl lg:overflow-hidden h-[100dvh]">
-
+        <div
+            className="flex flex-col h-full bg-black/20 backdrop-blur-3xl relative overflow-hidden"
+            onClick={() => {
+                if (window.innerWidth < 1024 && textInputRef.current) {
+                    textInputRef.current.focus();
+                }
+            }}
+        >
             {/* 1. HEADER (Fixed at top) */}
             <div className="shrink-0 px-4 py-3 border-b border-white/10 flex items-center justify-between bg-black/40 backdrop-blur-md z-10">
                 <div className="flex items-center gap-3">
@@ -480,6 +486,6 @@ export default function ChatWindow({ initialMessages, initialHasMore, otherUser,
                     </div>
                 </form>
             </div>
-        </div>
+        </div >
     );
 }
