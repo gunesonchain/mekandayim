@@ -305,7 +305,7 @@ export default function ChatWindow({ initialMessages, initialHasMore, otherUser,
 
     return (
         <div
-            className="flex flex-col h-full bg-black/20 backdrop-blur-3xl relative overflow-hidden"
+            className="flex flex-col md:h-full md:static fixed inset-0 z-50 bg-black md:bg-black/20 md:backdrop-blur-3xl relative overflow-hidden h-[100dvh]"
             onClick={() => {
                 // Mobilde boşluğa tıklanınca inputa odaklansın (kullanıcı deneyimi için)
                 if (window.innerWidth < 768 && fileInputRef.current) {
