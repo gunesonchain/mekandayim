@@ -42,7 +42,7 @@ export default function Header() {
 
                     {/* Mobile Notification Bell (Right - symmetric to hamburger) */}
                     <div className="absolute right-2 md:hidden">
-                        <NotificationBell />
+                        {session && <NotificationBell />}
                     </div>
 
                     {/* Desktop Nav & Search */}

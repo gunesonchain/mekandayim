@@ -91,15 +91,15 @@ export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps
                             </button>
                         </div>
 
-                        <div className="flex flex-col gap-4 flex-1">
+                        <div className="flex flex-col gap-2 flex-1">
                             {session ? (
                                 <>
                                     {/* Mobile Search - Top */}
-                                    <div className="mb-2">
+                                    <div className="-mt-2">
                                         <SearchInput variant="mobile" placeholder="Mekan ara..." />
                                     </div>
 
-                                    <Link onClick={onClose} href="/profile" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors mb-2">
+                                    <Link onClick={onClose} href="/profile" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
                                         <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(session.user?.username || session.user?.name)} flex items-center justify-center text-sm font-bold text-white overflow-hidden`}>
                                             {profileImage ? (
                                                 // eslint-disable-next-line @next/next/no-img-element
@@ -147,7 +147,7 @@ export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps
 
                                     {/* @ts-ignore */}
                                     {session.user?.role === 'MODERATOR' && (
-                                        <div className="pt-2 mt-2 border-t border-white/10">
+                                        <div className="pt-3 border-t border-white/10">
                                             <Link onClick={onClose} href="/reports" className="flex items-center gap-3 px-4 py-3 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10 rounded-lg transition-colors">
                                                 <div className="w-5 h-5 flex items-center justify-center font-bold">!</div>
                                                 Şikayet Yönetimi
