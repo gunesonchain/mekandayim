@@ -304,7 +304,18 @@ export default function ChatWindow({ initialMessages, initialHasMore, otherUser,
     });
 
     return (
-        <div className="flex flex-col h-full bg-black/20 backdrop-blur-3xl relative overflow-hidden">
+        <div
+            className="flex flex-col h-full bg-black/20 backdrop-blur-3xl relative overflow-hidden"
+            onClick={() => {
+                // Mobilde boşluğa tıklanınca inputa odaklansın (kullanıcı deneyimi için)
+                if (window.innerWidth < 768 && fileInputRef.current) {
+                    // fileInputRef değil text inputa odaklanmalı, bu yüzden ref eklememiz lazım
+                    // Hızlı çözüm: document.querySelector ile inputu bulup focus yapalım
+                    const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+                    if (input) input.focus();
+                }
+            }}
+        >
             {/* Chat Header - Compact */}
             <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between bg-black/40 sticky top-0 z-10">
                 <div className="flex items-center gap-2">
@@ -414,7 +425,7 @@ export default function ChatWindow({ initialMessages, initialHasMore, otherUser,
             </div>
 
             {/* Input Area - Compact */}
-            <form onSubmit={handleSend} className="px-3 py-2 border-t border-white/10 bg-black/40">
+            <form onSubmit={handleSend} className="px-3 py-2 border-t border-white/10 bg-black/40 relative z-20">
                 {selectedImage && (
                     <div className="mb-2 relative inline-block">
                         <img src={selectedImage} alt="Preview" className="h-16 w-auto rounded-lg border border-white/20" />
