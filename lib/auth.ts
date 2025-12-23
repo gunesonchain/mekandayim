@@ -31,6 +31,11 @@ export const authOptions: NextAuthOptions = {
 
                 if (!user) return null;
 
+                // Check if user is banned
+                if (user.isBanned) {
+                    throw new Error("Hesabınız engellenmiş.");
+                }
+
                 const passwordMatch = await compare(credentials.password, user.password);
 
                 if (!passwordMatch) return null;

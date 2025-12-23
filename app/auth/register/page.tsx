@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin } from 'lucide-react';
 import { registerUser } from '@/app/actions';
 import { signIn } from 'next-auth/react';
 
@@ -50,15 +49,9 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center p-4">
+        <div className="flex min-h-screen flex-col items-center pt-20 p-4">
             <div className="mb-8 text-center">
-                <Link href="/" className="flex items-center gap-2 font-bold text-2xl text-white justify-center mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center">
-                        <MapPin size={24} className="text-white" />
-                    </div>
-                    <span>Mekan<span className="text-purple-500">İtirafları</span></span>
-                </Link>
-                <h2 className="text-xl text-gray-400">Aramıza katıl!</h2>
+                <h1 className="text-2xl font-bold text-white mb-2">Aramıza katıl!</h1>
             </div>
 
             <div className="w-full max-w-sm bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-xl">

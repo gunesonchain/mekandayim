@@ -17,11 +17,11 @@ interface MessageBubbleProps {
 export default function MessageBubble({ id, content, image, isOwn, isRead, createdAt }: MessageBubbleProps) {
     return (
         <div className={cn(
-            "flex w-full mb-4 group",
+            "flex w-full mb-1 group",
             isOwn ? "justify-end" : "justify-start"
         )}>
             <div className={cn(
-                "max-w-[70%] px-4 py-2 rounded-2xl break-words text-sm relative",
+                "max-w-[75%] px-3 py-1.5 rounded-2xl break-words text-sm relative",
                 isOwn
                     ? "bg-gradient-to-br from-purple-600 to-blue-600 text-white rounded-br-none"
                     : "bg-white/10 text-white rounded-bl-none border border-white/5"

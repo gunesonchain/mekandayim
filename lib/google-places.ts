@@ -22,14 +22,13 @@ export async function searchPlaces(query: string): Promise<Place[]> {
     }
 
     try {
-        console.log(`Searching Google Places (New API) for: "${query}"`);
 
         const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-Goog-Api-Key': apiKey,
-                'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.types,places.rating,places.photos'
+                'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.types,places.rating'
             },
             body: JSON.stringify({
                 textQuery: query,
@@ -46,7 +45,7 @@ export async function searchPlaces(query: string): Promise<Place[]> {
 
         if (!data.places) return [];
 
-        console.log(`Found ${data.places.length} places.`);
+
         return data.places.map((place: any) => ({
             id: place.id,
             name: place.displayName?.text || 'Bilinmeyen Mekan',
@@ -69,11 +68,11 @@ export async function getPlaceDetails(placeId: string): Promise<Place | null> {
     }
 
     try {
-        console.log(`Fetching details for place ID: ${placeId}`);
 
         // Need to pass language via query param or header? 
         // v1 uses languageCode in body for search, but for GET details it uses `languageCode` query param.
         const responseWithLang = await fetch(`https://places.googleapis.com/v1/places/${placeId}?languageCode=tr`, {
+            cache: 'no-store',
             headers: {
                 'X-Goog-Api-Key': apiKey,
                 'X-Goog-FieldMask': 'id,displayName,formattedAddress,types,rating,photos'

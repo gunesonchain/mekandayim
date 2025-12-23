@@ -9,12 +9,13 @@ import { useState } from 'react';
 import MobileMenu from './MobileMenu';
 import SearchInput from './SearchInput';
 import { useNotification } from './NotificationContext';
+import NotificationBell from './NotificationBell';
 
 export default function Header() {
     const pathname = usePathname();
     const { data: session } = useSession();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const { unreadCount } = useNotification();
+    const { unreadMessageCount } = useNotification();
 
     return (
         <>
@@ -39,6 +40,11 @@ export default function Header() {
                         </Link>
                     </div>
 
+                    {/* Mobile Notification Bell (Right - symmetric to hamburger) */}
+                    <div className="absolute right-2 md:hidden">
+                        <NotificationBell />
+                    </div>
+
                     {/* Desktop Nav & Search */}
                     <nav className="hidden md:flex items-center gap-6 ml-auto">
 
@@ -57,12 +63,13 @@ export default function Header() {
 
                         {session ? (
                             <>
+                                <NotificationBell />
                                 <Link href="/dm" className={clsx("text-sm font-medium transition-colors hover:text-white flex items-center gap-2", pathname.startsWith('/dm') ? "text-white" : "text-gray-400")}>
                                     <div className="relative">
                                         <MessageCircle size={16} />
-                                        {unreadCount > 0 && (
+                                        {unreadMessageCount > 0 && (
                                             <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white ring-2 ring-black">
-                                                {unreadCount > 9 ? '9+' : unreadCount}
+                                                {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
                                             </span>
                                         )}
                                     </div>
@@ -74,6 +81,17 @@ export default function Header() {
                                     </div>
                                     Profilim
                                 </Link>
+                                {/* @ts-ignore */}
+                                {session.user?.role === 'MODERATOR' && (
+                                    <>
+                                        <Link href="/reports" className={clsx("text-sm font-medium transition-colors hover:text-yellow-400", pathname === '/reports' ? "text-yellow-400" : "text-gray-400")}>
+                                            Şikayetler
+                                        </Link>
+                                        <Link href="/bans" className={clsx("text-sm font-medium transition-colors hover:text-red-400", pathname === '/bans' ? "text-red-400" : "text-gray-400")}>
+                                            Engeller
+                                        </Link>
+                                    </>
+                                )}
                                 <button
                                     onClick={() => {
                                         const callbackUrl = `${window.location.origin}/`;
@@ -85,9 +103,14 @@ export default function Header() {
                                 </button>
                             </>
                         ) : (
-                            <Link href="/api/auth/signin" className="text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-full transition-colors">
-                                Giriş Yap
-                            </Link>
+                            <>
+                                <Link href="/api/auth/signin" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                                    Giriş Yap
+                                </Link>
+                                <Link href="/auth/register" className="text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-full transition-colors">
+                                    Üye Ol
+                                </Link>
+                            </>
                         )}
                     </nav>
 

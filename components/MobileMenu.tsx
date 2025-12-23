@@ -17,7 +17,7 @@ interface MobileMenuProps {
 }
 
 export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps) {
-    const { unreadCount } = useNotification();
+    const { unreadMessageCount } = useNotification();
     const [profileImage, setProfileImage] = useState<string | null>(session?.user?.image || null);
 
     useEffect(() => {
@@ -120,9 +120,9 @@ export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps
                                             Mesajlar
                                         </div>
                                         {/* Badge */}
-                                        {unreadCount > 0 && (
+                                        {unreadMessageCount > 0 && (
                                             <div className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow-sm min-w-[20px] text-center flex items-center justify-center">
-                                                {unreadCount}
+                                                {unreadMessageCount}
                                             </div>
                                         )}
                                     </Link>
@@ -152,15 +152,24 @@ export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps
                                                 <div className="w-5 h-5 flex items-center justify-center font-bold">!</div>
                                                 Şikayet Yönetimi
                                             </Link>
+                                            <Link onClick={onClose} href="/bans" className="flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors">
+                                                <div className="w-5 h-5 flex items-center justify-center">🚫</div>
+                                                Engel Yönetimi
+                                            </Link>
                                         </div>
                                     )}
                                 </>
                             ) : (
                                 <>
-                                    <Link onClick={onClose} href="/api/auth/signin" className="flex items-center gap-3 px-4 py-3 text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors font-medium">
-                                        <LogIn size={20} />
-                                        Giriş Yap / Üye Ol
-                                    </Link>
+                                    <div className="flex flex-col gap-2">
+                                        <Link onClick={onClose} href="/api/auth/signin" className="flex items-center justify-center gap-2 px-4 py-3 text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors font-medium">
+                                            <LogIn size={18} />
+                                            Giriş Yap
+                                        </Link>
+                                        <Link onClick={onClose} href="/auth/register" className="flex items-center justify-center gap-2 px-4 py-3 text-purple-400 border border-purple-500/50 hover:bg-purple-500/10 rounded-xl transition-colors font-medium">
+                                            Üye Ol
+                                        </Link>
+                                    </div>
 
                                     {/* Mobile Search - Below Login */}
                                     <div className="mt-2 text-white">
@@ -176,7 +185,7 @@ export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps
                                 <Link onClick={onClose} href="#" className="text-sm text-gray-500 hover:text-gray-300">Hakkımızda</Link>
                                 <Link onClick={onClose} href="#" className="text-sm text-gray-500 hover:text-gray-300">Kurallar</Link>
                                 <Link onClick={onClose} href="#" className="text-sm text-gray-500 hover:text-gray-300">İletişim</Link>
-                                <p className="text-xs text-gray-600 mt-2">&copy; 2024 Mekan İtirafları</p>
+                                <p className="text-xs text-gray-600 mt-2">&copy; 2025 Mekan İtirafları</p>
                             </div>
                         </div>
                     </motion.div>

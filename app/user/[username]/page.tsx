@@ -97,7 +97,7 @@ export default async function UserProfilePage({ params, searchParams }: UserPage
                     {/* @ts-ignore */}
                     {user.role === 'MODERATOR' && (
                         <span
-                            className="bg-purple-500/20 text-purple-300 text-xs font-bold px-2 py-0.5 rounded border border-purple-500/20 cursor-default"
+                            className="bg-purple-500/20 text-purple-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-purple-500/20 cursor-default"
                             title="Moderatör"
                         >
                             MOD
@@ -137,13 +137,41 @@ export default async function UserProfilePage({ params, searchParams }: UserPage
 
                 {/* Actions (DM) - Only show if LOGGED IN and NOT own profile */}
                 {session?.user && !isOwner && (
-                    <Link
-                        href={`/dm/${user.id}`}
-                        className="flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded-full font-bold hover:bg-gray-200 transition-colors mt-6"
-                    >
-                        <MessageCircle size={18} />
-                        Mesaj At
-                    </Link>
+                    <div className="flex flex-col items-center gap-3 mt-6">
+                        {/* Hide DM button if user is banned */}
+                        {!user.isBanned && (
+                            <Link
+                                href={`/dm/${user.id}`}
+                                className="flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded-full font-bold hover:bg-gray-200 transition-colors"
+                            >
+                                <MessageCircle size={18} />
+                                Mesaj At
+                            </Link>
+                        )}
+
+                        {/* @ts-ignore */}
+                        {session.user.role === 'MODERATOR' && !user.isBanned && (
+                            <form action={async () => {
+                                'use server';
+                                const { banUser } = await import('@/actions/moderation');
+                                await banUser(user.id);
+                            }}>
+                                <button
+                                    type="submit"
+                                    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full font-medium text-sm transition-colors"
+                                >
+                                    🚫 Kullanıcıyı Engelle
+                                </button>
+                            </form>
+                        )}
+
+                        {/* Show banned status */}
+                        {user.isBanned && (
+                            <div className="flex items-center gap-2 bg-red-500/10 text-red-400 px-4 py-2 rounded-full text-sm font-medium border border-red-500/20">
+                                🚫 Engellenmiş Kullanıcı
+                            </div>
+                        )}
+                    </div>
                 )}
             </div>
 
@@ -160,8 +188,54 @@ export default async function UserProfilePage({ params, searchParams }: UserPage
                 <div className="space-y-4">
                     {!isOwner && <h2 className="text-xl font-bold text-white border-b border-white/10 pb-4 mb-6">Paylaşılan İtiraflar</h2>}
 
-                    {/* Privacy Check */}
-                    {!isOwner && user.hideEntries ? (
+                    {/* Banned Check - Show blocked UI */}
+                    {!isOwner && user.isBanned ? (
+                        <div className="relative overflow-hidden rounded-3xl border border-red-500/20 min-h-[440px] group">
+                            {/* Fake Content Layer (Blurred) */}
+                            <div className="absolute inset-0 p-6 space-y-4 opacity-50 select-none pointer-events-none overflow-hidden">
+                                {/* Dummy Entry 1 */}
+                                <div className="bg-white/5 border border-white/10 p-4 rounded-xl backdrop-blur-sm">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="h-4 w-1/3 bg-red-500/20 rounded animate-pulse"></div>
+                                        <div className="h-3 w-12 bg-white/10 rounded"></div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="h-3 w-full bg-white/10 rounded"></div>
+                                        <div className="h-3 w-5/6 bg-white/10 rounded"></div>
+                                    </div>
+                                </div>
+                                {/* Dummy Entry 2 */}
+                                <div className="bg-white/5 border border-white/10 p-4 rounded-xl backdrop-blur-sm">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="h-4 w-1/4 bg-red-500/20 rounded"></div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="h-3 w-11/12 bg-white/10 rounded"></div>
+                                        <div className="h-3 w-full bg-white/10 rounded"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Heavy Blur Overlay - Red tint for banned */}
+                            <div className="absolute inset-0 backdrop-blur-xl bg-red-500/5"></div>
+
+                            {/* Foreground Message */}
+                            <div className="absolute inset-0 flex items-center justify-center z-20">
+                                <div className="flex flex-col items-center gap-6 p-8 text-center max-w-sm mx-auto">
+                                    <div className="w-20 h-20 bg-gradient-to-br from-red-500/20 to-red-900/20 rounded-3xl flex items-center justify-center border border-red-500/20 shadow-2xl shadow-red-900/20 mb-2 ring-1 ring-red-500/20">
+                                        <div className="text-4xl drop-shadow-md">🚫</div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <h3 className="text-2xl font-bold text-white tracking-tight">Engellenmiş Kullanıcı</h3>
+                                        <p className="text-gray-400 text-sm leading-relaxed">
+                                            Bu kullanıcı engellendiği için itirafları görüntülenemiyor.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : !isOwner && user.hideEntries ? (
                         <div className="relative overflow-hidden rounded-3xl border border-white/10 min-h-[440px] group">
                             {/* Fake Content Layer (Blurred) */}
                             <div className="absolute inset-0 p-6 space-y-4 opacity-50 select-none pointer-events-none overflow-hidden">

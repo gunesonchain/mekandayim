@@ -1,4 +1,5 @@
 import { getPlaceDetails } from "@/lib/google-places";
+import { downloadAndSaveImage } from "@/lib/image-downloader";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
@@ -62,7 +63,10 @@ async function getLocationData(slugOrId: string, page: number = 1) {
         where: { slug: slugOrId },
         include: {
             entries: {
-                where: { isDeleted: false },
+                where: {
+                    isDeleted: false,
+                    user: { isBanned: false }
+                },
                 include: { user: true, likes: true },
                 orderBy: { createdAt: 'desc' },
                 take: ITEMS_PER_PAGE,
@@ -71,13 +75,14 @@ async function getLocationData(slugOrId: string, page: number = 1) {
         }
     });
 
-    // Explicitly count non-deleted entries
+    // Explicitly count non-deleted entries from non-banned users
     let totalCount = 0;
     if (location) {
         totalCount = await prisma.entry.count({
             where: {
                 locationId: location.id,
-                isDeleted: false
+                isDeleted: false,
+                user: { isBanned: false }
             }
         });
     }
@@ -129,10 +134,59 @@ export default async function LocationPage({ params, searchParams }: PageProps) 
         redirect(`/location/${slug}?page=${lastPage}`);
     }
 
-    // Fetch Google Data (Always fresh info)
-    let place = await getPlaceDetails(googleId);
+    let place: any = null;
 
-    // Fallback if Google API fails but we have DB data
+    // OPTIMIZATION: Check DB Cache first (Save $$$)
+    // Only use cache if we have BOTH photo and address
+    if (dbLocation && dbLocation.photoUrl && dbLocation.address) {
+        place = {
+            id: dbLocation.googleId,
+            name: dbLocation.name,
+            address: dbLocation.address,
+            type: 'venue',
+            photoUrl: dbLocation.photoUrl
+        };
+    }
+
+    // If not cached, fetch from Google
+    if (!place) {
+        const googlePlace = await getPlaceDetails(googleId);
+
+        if (googlePlace) {
+            place = googlePlace;
+
+            // DOWNLOAD IMAGE LOCALLY (Cost Saving)
+            if (place.photoUrl) {
+                const localPath = await downloadAndSaveImage(place.photoUrl, googleId);
+                if (localPath) {
+                    place.photoUrl = localPath;
+                }
+            }
+
+            // Cache the result for future visits
+            try {
+                await prisma.location.upsert({
+                    where: { googleId: googleId },
+                    update: {
+                        name: place.name,
+                        address: place.address,
+                        photoUrl: place.photoUrl
+                    },
+                    create: {
+                        googleId: googleId,
+                        slug: googleId,
+                        name: place.name,
+                        address: place.address,
+                        photoUrl: place.photoUrl
+                    }
+                });
+            } catch (e) {
+                console.error("Failed to cache location:", e);
+            }
+        }
+    }
+
+    // Final Fallback (if Google fails and we have DB data)
     if (!place && dbLocation) {
         place = {
             id: dbLocation.googleId,

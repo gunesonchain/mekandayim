@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { createNotification } from "./notifications";
 
 // --- HELPERS ---
 
@@ -20,11 +21,21 @@ const MAX_REPORTS = 2;
 // ... existing helper ...
 
 export async function reportEntry(entryId: string, reason: string) {
-    const user = await getSessionUser();
-    if (!user) return { error: "Şikayet etmek için giriş yapmalısınız." };
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) return { error: "Şikayet etmek için giriş yapmalısınız." };
 
     // @ts-ignore
-    const reporterId = user.id;
+    const reporterId = sessionUser.id;
+
+    // Check if user is banned (from DB since session doesn't have isBanned)
+    const user = await prisma.user.findUnique({
+        where: { id: reporterId },
+        select: { isBanned: true }
+    });
+
+    if (user?.isBanned) {
+        return { error: "Hesabınız engellenmiş." };
+    }
 
     if (!reason || reason.trim().length < 3) {
         return { error: "Lütfen geçerli bir sebep belirtin." };
@@ -32,6 +43,20 @@ export async function reportEntry(entryId: string, reason: string) {
 
     if (reason.length > 100) {
         return { error: "Şikayet sebebi en fazla 100 karakter olabilir." };
+    }
+
+    // Check if entry exists and is not deleted
+    const entry = await prisma.entry.findUnique({
+        where: { id: entryId },
+        select: { isDeleted: true }
+    });
+
+    if (!entry) {
+        return { error: "İtiraf bulunamadı." };
+    }
+
+    if (entry.isDeleted) {
+        return { error: "Bu itiraf zaten silinmiş." };
     }
 
     // Rate Limiting
@@ -84,22 +109,23 @@ export async function getReports() {
         });
 
         // Group reports by entryId
-        const groupedReports: Record<string, { entry: any, count: number, reports: any[], status: 'PENDING' | 'RESOLVED' }> = {};
+        const groupedReports: Record<string, { entry: any, count: number, reports: any[], status: 'PENDING' | 'RESOLVED' | 'DISMISSED' }> = {};
 
         for (const report of reports) {
             if (!groupedReports[report.entry.id]) {
-                const groupStatus = report.status === 'PENDING' ? 'PENDING' : 'RESOLVED'; // Simplified status logic for group
                 groupedReports[report.entry.id] = {
                     entry: report.entry,
                     count: 0,
                     reports: [],
-                    status: groupStatus
+                    status: report.status as 'PENDING' | 'RESOLVED' | 'DISMISSED'
                 };
             }
 
             // If any report is pending, the group is pending
             if (report.status === 'PENDING') {
                 groupedReports[report.entry.id].status = 'PENDING';
+            } else if (report.status === 'RESOLVED' && groupedReports[report.entry.id].status !== 'PENDING') {
+                groupedReports[report.entry.id].status = 'RESOLVED';
             }
 
             groupedReports[report.entry.id].count++;
@@ -109,13 +135,16 @@ export async function getReports() {
         const allGroups = Object.values(groupedReports).sort((a, b) => b.count - a.count);
 
         const pendingGroups = allGroups.filter(g => g.status === 'PENDING');
-        const historyGroups = allGroups.filter(g => g.status !== 'PENDING');
+        const resolvedGroups = allGroups.filter(g => g.status === 'RESOLVED');
+        const dismissedGroups = allGroups.filter(g => g.status === 'DISMISSED');
 
-        return { pendingGroups, historyGroups };
+        return { pendingGroups, resolvedGroups, dismissedGroups };
     } catch (error) {
         return { error: "Raporlar alınamadı." };
     }
 }
+
+
 
 
 export async function dismissReport(reportId: string, _formData?: FormData) {
@@ -124,10 +153,14 @@ export async function dismissReport(reportId: string, _formData?: FormData) {
     if (!user || user.role !== 'MODERATOR') return;
 
     try {
-        await prisma.report.update({
+        const report = await prisma.report.update({
             where: { id: reportId },
             data: { status: 'DISMISSED' }
         });
+
+        // Notification removed based on user request (no alert on ignore)
+        // await createNotification(report.reporterId, 'report_dismissed', ...);
+
         revalidatePath('/reports');
     } catch (error) {
         console.error("Dismiss Report Error:", error);
@@ -140,19 +173,37 @@ export async function deleteEntryAndResolveReport(entryId: string, _formData?: F
     if (!user || user.role !== 'MODERATOR') return;
 
     try {
-        console.log("Attempting soft delete for entry:", entryId);
+        // Fetch pending reports to notify users
+        const pendingReports = await prisma.report.findMany({
+            where: { entryId, status: 'PENDING' }
+        });
+
         // SOFT DELETE: Update isDeleted to true
         await prisma.entry.update({
             where: { id: entryId },
             data: { isDeleted: true }
         });
-        console.log("Soft delete successful");
+
 
         // Resolve all reports associated with this entry
         await prisma.report.updateMany({
             where: { entryId },
             data: { status: 'RESOLVED' }
         });
+
+        // Notify reporters (Unique per user)
+        const notifiedUserIds = new Set<string>();
+
+        for (const report of pendingReports) {
+            if (!notifiedUserIds.has(report.reporterId)) {
+                await createNotification(
+                    report.reporterId,
+                    'report_resolved',
+                    'Şikayetiniz haklı bulundu ve içerik kaldırıldı. Teşekkürler!'
+                );
+                notifiedUserIds.add(report.reporterId);
+            }
+        }
 
         revalidatePath('/reports');
     } catch (error) {
@@ -166,10 +217,31 @@ export async function dismissAllReportsForEntry(entryId: string, _formData?: For
     if (!user || user.role !== 'MODERATOR') return;
 
     try {
+        // Fetch pending reports to notify users
+        const pendingReports = await prisma.report.findMany({
+            where: { entryId, status: 'PENDING' }
+        });
+
         await prisma.report.updateMany({
             where: { entryId },
             data: { status: 'DISMISSED' }
         });
+
+        // Notify reporters (Unique per user)
+        const notifiedUserIds = new Set<string>();
+
+        // Notification removed based on user request (no alert on ignore)
+        /*
+        for (const report of pendingReports) {
+            if (!notifiedUserIds.has(report.reporterId)) {
+                await createNotification(
+                   // ...
+                );
+                notifiedUserIds.add(report.reporterId);
+            }
+        }
+        */
+
         revalidatePath('/reports');
     } catch (error) {
         console.error("Dismiss All Error:", error);
@@ -204,17 +276,77 @@ export async function restoreReportGroup(entryId: string, _formData?: FormData) 
 export async function banUser(userId: string, _formData?: FormData) {
     const user = await getSessionUser();
     // @ts-ignore
-    if (!user || user.role !== 'MODERATOR') return;
+    if (!user || user.role !== 'MODERATOR') return { error: "Yetkisiz işlem." };
 
     try {
         // Ban user
-        await prisma.user.update({
+        const bannedUser = await prisma.user.update({
             where: { id: userId },
             data: { isBanned: true }
         });
 
         revalidatePath('/reports');
+        revalidatePath(`/user/${bannedUser.username}`);
+        revalidatePath('/bans');
+        return { success: true };
     } catch (error) {
         console.error("Ban Error:", error);
+        return { error: "Bir hata oluştu." };
+    }
+}
+
+export async function unbanUser(userId: string) {
+    const user = await getSessionUser();
+    // @ts-ignore
+    if (!user || user.role !== 'MODERATOR') return { error: "Yetkisiz işlem." };
+
+    try {
+        const unbannedUser = await prisma.user.update({
+            where: { id: userId },
+            data: { isBanned: false }
+        });
+
+        revalidatePath('/bans');
+        revalidatePath(`/user/${unbannedUser.username}`);
+        revalidatePath('/');
+        return { success: true };
+    } catch (error) {
+        console.error("Unban Error:", error);
+        return { error: "Bir hata oluştu." };
+    }
+}
+
+export async function getBannedUsers(search?: string) {
+    const user = await getSessionUser();
+    // @ts-ignore
+    if (!user || user.role !== 'MODERATOR') return { error: "Yetkisiz işlem.", users: [] };
+
+    try {
+        const users = await prisma.user.findMany({
+            where: {
+                isBanned: true,
+                ...(search ? {
+                    OR: [
+                        { username: { contains: search, mode: 'insensitive' } },
+                        { email: { contains: search, mode: 'insensitive' } }
+                    ]
+                } : {})
+            },
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                createdAt: true,
+                _count: {
+                    select: { entries: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        return { users };
+    } catch (error) {
+        console.error("Get Banned Users Error:", error);
+        return { error: "Kullanıcılar alınamadı.", users: [] };
     }
 }

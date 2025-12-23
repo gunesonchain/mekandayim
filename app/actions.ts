@@ -23,7 +23,6 @@ export async function createEntry(formData: FormData) {
     const locationPhotoUrl = formData.get('locationPhotoUrl') as string;
     const userId = formData.get('userId') as string;
 
-    console.log("Creating Entry Request:", { content, locationId, locationName, userId });
 
     // Strict validation
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
@@ -42,10 +41,15 @@ export async function createEntry(formData: FormData) {
     // EMAIL VERIFICATION CHECK
     const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { emailVerified: true }
+        select: { emailVerified: true, isBanned: true }
     });
 
     if (!user) return { error: "Kullanıcı bulunamadı." };
+
+    // Check if user is banned
+    if (user.isBanned) {
+        return { error: "Hesabınız engellenmiş." };
+    }
 
     // Allow users registered BEFORE this change to bypass? 
     // Or strictly enforce? User said "Gold Standard". Enforce.
@@ -78,7 +82,7 @@ export async function createEntry(formData: FormData) {
         });
 
         if (!location) {
-            console.log("Location not found in DB, creating new:", locationName);
+
             if (!locationName) return { error: "Mekan ismi eksik." }; // Cannot create without name
 
             try {
@@ -101,13 +105,13 @@ export async function createEntry(formData: FormData) {
                         photoUrl: locationPhotoUrl || null
                     }
                 });
-                console.log("Location created successfully:", location.id);
+
             } catch (locError) {
                 console.error("Failed to create location:", locError);
                 return { error: "Mekan oluşturulurken bir hata oluştu." };
             }
         } else {
-            console.log("Location found:", location.id);
+
             // Optional: Update photoUrl if it was null?
             if (!location.photoUrl && locationPhotoUrl) {
                 await prisma.location.update({
@@ -118,7 +122,7 @@ export async function createEntry(formData: FormData) {
         }
 
         // 2. Create Entry
-        console.log("Creating entry for user:", userId);
+
         const entry = await prisma.entry.create({
             data: {
                 content: content,
@@ -126,7 +130,7 @@ export async function createEntry(formData: FormData) {
                 locationId: location.id
             }
         });
-        console.log("Entry created successfully:", entry.id);
+
 
         revalidatePath(`/location/${location.slug}`); // Use slug
         return { success: true, locationSlug: location.slug }; // Return slug
@@ -191,7 +195,7 @@ export async function registerUser(formData: FormData) {
     // HONEYPOT CHECK
     const honeypot = formData.get('confirm_email') as string; // Hidden field
     if (honeypot) {
-        console.log("Bot detected (Honeypot filled). Rejecting.");
+
         // Fake success to confuse bot
         return { success: true };
     }
@@ -242,6 +246,10 @@ export async function registerUser(formData: FormData) {
         });
 
         if (existing) {
+            // Check if the existing user is banned - prevent reuse of banned credentials
+            if (existing.isBanned) {
+                return { error: 'Bu kullanıcı adı veya e-posta engellenmiş.' };
+            }
             return { error: 'Bu kullanıcı adı veya e-posta zaten kullanımda.' };
         }
 
@@ -282,21 +290,21 @@ export async function registerUser(formData: FormData) {
 // Helper to ensure photo exists
 async function ensureLocationPhoto(location: any) {
     if (!location.photoUrl) {
-        console.log(`[PhotoDebug] Checking photo for: ${location.name} (${location.googleId})`);
+
         try {
             // Lazy load photo from Google Places
             const place = await getPlaceDetails(location.googleId);
-            console.log(`[PhotoDebug] API Result used for ${location.name}:`, place ? "Found" : "Null", place?.photoUrl ? "HasPhoto" : "NoPhoto");
+
 
             if (place && place.photoUrl) {
-                console.log(`[PhotoDebug] Updating DB for ${location.name} with photo: ${place.photoUrl.substring(0, 30)}...`);
+
                 await prisma.location.update({
                     where: { id: location.id },
                     data: { photoUrl: place.photoUrl }
                 });
                 location.photoUrl = place.photoUrl;
             } else {
-                console.log(`[PhotoDebug] No photo found in API for ${location.name}`);
+
             }
         } catch (e) {
             console.error(`[PhotoDebug] Failed to lazy load photo for ${location.name}`, e);
@@ -311,8 +319,12 @@ export async function getHomepageStats() {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const [recentLocations, popularLocations] = await Promise.all([
-        // Recent: Locations with most recent entries
+        // Recent: Locations with most recent entries (excluding banned users)
         prisma.entry.findMany({
+            where: {
+                isDeleted: false,
+                user: { isBanned: false }
+            },
             take: 5,
             orderBy: { createdAt: 'desc' },
             include: { location: true },
@@ -322,7 +334,7 @@ export async function getHomepageStats() {
             return Promise.all(locations.map(ensureLocationPhoto));
         }),
 
-        // Popular: Locations with most entries
+        // Popular: Locations with most entries (count excludes banned)
         prisma.location.findMany({
             take: 5,
             orderBy: {
@@ -343,7 +355,8 @@ export async function getHomepageStats() {
                     where: {
                         locationId: loc.id,
                         createdAt: { gte: oneDayAgo },
-                        isDeleted: false
+                        isDeleted: false,
+                        user: { isBanned: false }
                     }
                 });
                 return { ...filledLoc, entries24h };

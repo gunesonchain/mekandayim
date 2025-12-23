@@ -16,11 +16,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: { ta
     }
 
     // @ts-ignore
-    const { pendingGroups, historyGroups, error } = await getReports();
+    const { pendingGroups, resolvedGroups, dismissedGroups, error } = await getReports();
 
     // Determine active tab
-    const tab = searchParams?.tab === 'history' ? 'history' : 'pending';
-    const activeGroups = tab === 'history' ? historyGroups : pendingGroups;
+    const tab = searchParams?.tab || 'pending';
+    const activeGroups = tab === 'resolved' ? resolvedGroups : tab === 'dismissed' ? dismissedGroups : pendingGroups;
 
     return (
         <div className="min-h-screen bg-black text-white p-4 md:p-8 pb-24">
@@ -32,18 +32,24 @@ export default async function ReportsPage({ searchParams }: { searchParams: { ta
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-4 border-b border-white/10 mb-6">
+                <div className="flex gap-4 border-b border-white/10 mb-6 overflow-x-auto">
                     <Link
                         href="/reports"
-                        className={`pb-3 px-2 text-sm font-medium transition-colors ${tab === 'pending' ? 'text-white border-b-2 border-purple-500' : 'text-gray-500 hover:text-gray-300'}`}
+                        className={`pb-3 px-2 text-sm font-medium transition-colors whitespace-nowrap ${tab === 'pending' ? 'text-white border-b-2 border-purple-500' : 'text-gray-500 hover:text-gray-300'}`}
                     >
                         Bekleyenler ({pendingGroups?.length || 0})
                     </Link>
                     <Link
-                        href="/reports?tab=history"
-                        className={`pb-3 px-2 text-sm font-medium transition-colors ${tab === 'history' ? 'text-white border-b-2 border-purple-500' : 'text-gray-500 hover:text-gray-300'}`}
+                        href="/reports?tab=resolved"
+                        className={`pb-3 px-2 text-sm font-medium transition-colors whitespace-nowrap ${tab === 'resolved' ? 'text-white border-b-2 border-red-500' : 'text-gray-500 hover:text-gray-300'}`}
                     >
-                        Geçmiş ({historyGroups?.length || 0})
+                        Silinen ({resolvedGroups?.length || 0})
+                    </Link>
+                    <Link
+                        href="/reports?tab=dismissed"
+                        className={`pb-3 px-2 text-sm font-medium transition-colors whitespace-nowrap ${tab === 'dismissed' ? 'text-white border-b-2 border-yellow-500' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                        Yoksayılan ({dismissedGroups?.length || 0})
                     </Link>
                 </div>
 
@@ -61,11 +67,17 @@ export default async function ReportsPage({ searchParams }: { searchParams: { ta
                                 <h3 className="text-lg font-medium text-white">Her şey temiz!</h3>
                                 <p className="text-gray-400">İncelenecek yeni şikayet bulunmuyor.</p>
                             </>
+                        ) : tab === 'resolved' ? (
+                            <>
+                                <Trash2 size={48} className="mx-auto text-red-600 mb-4" />
+                                <h3 className="text-lg font-medium text-white">Silinen İçerik Yok</h3>
+                                <p className="text-gray-400">Henüz silinen bir itiraf yok.</p>
+                            </>
                         ) : (
                             <>
-                                <Archive size={48} className="mx-auto text-gray-600 mb-4" />
-                                <h3 className="text-lg font-medium text-white">Geçmiş Boş</h3>
-                                <p className="text-gray-400">Henüz işlem yapılmış bir şikayet yok.</p>
+                                <Archive size={48} className="mx-auto text-yellow-600 mb-4" />
+                                <h3 className="text-lg font-medium text-white">Yoksayılan Yok</h3>
+                                <p className="text-gray-400">Henüz yoksayılan bir şikayet yok.</p>
                             </>
                         )}
                     </div>

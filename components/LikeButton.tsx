@@ -69,7 +69,7 @@ export default function LikeButton({ entryId, initialLikeCount, initialIsLiked, 
                 className={`transition-all duration-300 ${isLiked ? 'fill-pink-500' : ''} ${isAnimating ? 'scale-125' : 'scale-100'
                     }`}
             />
-            <span className="font-medium transition-all duration-200">{likeCount}</span>
+            <span className="font-medium transition-all duration-200 min-w-[12px]">{likeCount}</span>
         </button>
     );
 }

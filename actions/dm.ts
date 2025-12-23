@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { pusherServer } from "@/lib/pusher";
+import { createNotification } from "@/actions/notifications";
 
 export async function getConversations() {
     const session = await getServerSession(authOptions);
@@ -95,14 +97,16 @@ export async function getConversations() {
     return Array.from(conversationMap.values());
 }
 
-export async function getMessages(otherUserId: string) {
+export async function getMessages(otherUserId: string, cursor?: string) {
     const session = await getServerSession(authOptions);
-    if (!session?.user) return [];
+    if (!session?.user) return { messages: [], hasMore: false };
 
     // @ts-ignore
     const userId = session.user.id as string;
 
-    if (!userId) return [];
+    if (!userId) return { messages: [], hasMore: false };
+
+    const LIMIT = 20; // Messages per page
 
     const messages = await prisma.message.findMany({
         where: {
@@ -122,29 +126,42 @@ export async function getMessages(otherUserId: string) {
             ]
         },
         orderBy: {
-            createdAt: 'asc'
-        }
-    });
-
-    // Mark messages from other user as read when fetched
-    await prisma.message.updateMany({
-        where: {
-            senderId: otherUserId,
-            receiverId: userId,
-            isRead: false
+            createdAt: 'desc' // Get newest first
         },
-        data: {
-            isRead: true
-        }
+        take: LIMIT + 1, // Fetch one extra to check if more exist
+        ...(cursor ? {
+            cursor: { id: cursor },
+            skip: 1 // Skip the cursor item
+        } : {})
     });
 
-    // Silent revalidate to update sidebar badges if needed
-    revalidatePath('/dm');
+    const hasMore = messages.length > LIMIT;
+    const resultMessages = hasMore ? messages.slice(0, LIMIT) : messages;
 
-    return messages.map(msg => ({
-        ...msg,
-        createdAt: msg.createdAt.toISOString()
-    }));
+    // Mark messages from other user as read (only on initial load)
+    if (!cursor) {
+        await prisma.message.updateMany({
+            where: {
+                senderId: otherUserId,
+                receiverId: userId,
+                isRead: false
+            },
+            data: {
+                isRead: true
+            }
+        });
+
+        revalidatePath('/dm');
+    }
+
+    // Reverse to get oldest first for display
+    return {
+        messages: resultMessages.reverse().map(msg => ({
+            ...msg,
+            createdAt: msg.createdAt.toISOString()
+        })),
+        hasMore
+    };
 }
 
 export async function sendMessage(receiverId: string, content: string, image?: string) {
@@ -155,6 +172,30 @@ export async function sendMessage(receiverId: string, content: string, image?: s
     const senderId = session.user.id as string;
 
     if (!senderId) throw new Error("Unauthorized");
+
+    // Check if sender is banned
+    const sender = await prisma.user.findUnique({
+        where: { id: senderId },
+        select: { isBanned: true }
+    });
+
+    if (sender?.isBanned) {
+        throw new Error("Hesabınız engellenmiş.");
+    }
+
+    // Check if receiver exists and is not banned
+    const receiver = await prisma.user.findUnique({
+        where: { id: receiverId },
+        select: { isBanned: true }
+    });
+
+    if (!receiver) {
+        throw new Error("Kullanıcı bulunamadı.");
+    }
+
+    if (receiver.isBanned) {
+        throw new Error("Bu kullanıcıya mesaj gönderemezsiniz.");
+    }
 
     // Rate Limiting: Max 15 messages per minute
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
@@ -177,6 +218,24 @@ export async function sendMessage(receiverId: string, content: string, image?: s
             receiverId
         }
     });
+
+    // Trigger real-time event via Pusher
+    if (pusherServer) {
+        // Create unique channel name for this conversation
+        const channelName = `private-chat-${[senderId, receiverId].sort().join('-')}`;
+
+        await pusherServer.trigger(channelName, 'new-message', {
+            ...message,
+            createdAt: message.createdAt.toISOString()
+        });
+
+        // Also trigger a 'message-count-update' event for the receiver
+        // This allows the receiver's global message count to update instantly
+        const userChannel = `private-user-${receiverId}`;
+        await pusherServer.trigger(userChannel, 'info-update', {
+            type: 'message-received'
+        });
+    }
 
     revalidatePath('/dm');
     revalidatePath(`/dm/${receiverId}`);

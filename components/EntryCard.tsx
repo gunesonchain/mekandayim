@@ -41,15 +41,25 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false,
     const isLiked = currentUserId && entry.likes ? entry.likes.some(like => like.userId === currentUserId) : false;
     const isOwner = currentUserId === entry.userId;
 
-    let dateDisplay;
-    if (isToday(date) || isYesterday(date)) {
-        dateDisplay = formatDistanceToNow(date, { addSuffix: true, locale: tr });
-        if (dateDisplay === 'bir dakikadan az önce') {
-            dateDisplay = 'az önce';
+    // Use state for dynamic date display to avoid hydration mismatch
+    const [dateDisplay, setDateDisplay] = useState(() => {
+        // Server-side: always use static format
+        return format(date, 'd MMM HH:mm', { locale: tr });
+    });
+
+    useEffect(() => {
+        // Client-side: update to relative time
+        let display;
+        if (isToday(date) || isYesterday(date)) {
+            display = formatDistanceToNow(date, { addSuffix: true, locale: tr });
+            if (display === 'bir dakikadan az önce') {
+                display = 'az önce';
+            }
+        } else {
+            display = format(date, 'd MMMM yyyy HH:mm', { locale: tr });
         }
-    } else {
-        dateDisplay = format(date, 'd MMMM yyyy HH:mm', { locale: tr });
-    }
+        setDateDisplay(display);
+    }, []);
 
     const handleDelete = async () => {
         const isConfirmed = await confirm({
@@ -97,9 +107,7 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false,
         }
     };
 
-    const handleReport = () => {
-        alert('Şikayet özelliği yakında eklenecek.');
-    };
+
 
     if (isDeleting) return null;
 
@@ -128,7 +136,7 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false,
                         </Link>
                         {/* @ts-ignore */}
                         {entry.user.role === 'MODERATOR' && (
-                            <span title="Moderatör" className="inline-flex items-center justify-center bg-purple-500/20 text-purple-300 text-[10px] px-1.5 py-0.5 rounded border border-purple-500/30 cursor-default select-none ml-1">
+                            <span title="Moderatör" className="inline-flex items-center justify-center bg-purple-500/20 text-purple-300 text-[8px] px-1 py-px rounded border border-purple-500/30 cursor-default select-none">
                                 MOD
                             </span>
                         )}
@@ -147,7 +155,7 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false,
             {/* Footer: Actions */}
             <div className="flex items-center justify-between border-t border-white/5 pt-3">
 
-                {/* Left Side: Like, Message, Report */}
+                {/* Left Side: Like, Message */}
                 <div className="flex items-center gap-2">
                     <LikeButton
                         entryId={entry.id}
@@ -170,8 +178,11 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false,
                         <MessageCircle size={16} />
                         <span className="font-medium">Mesaj Gönder</span>
                     </Link>
+                </div>
 
-                    {/* Report button */}
+                {/* Right Side: Report, Delete, Share */}
+                <div className="flex items-center gap-1.5">
+                    {/* Report button - Glowing Yellow */}
                     {!isOwner && (
                         <button
                             onClick={async () => {
@@ -197,11 +208,8 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false,
                             <Flag size={16} />
                         </button>
                     )}
-                </div>
 
-                {/* Right Side: Delete (if owner) and Share (iOS Style Icon Only) */}
-                <div className="flex items-center gap-2">
-                    {/* Delete button (Moved here) */}
+                    {/* Delete button - Glowing Red */}
                     {isOwner && (
                         <button
                             onClick={handleDelete}
@@ -217,10 +225,10 @@ export default function EntryCard({ entry, currentUserId, isHighlighted = false,
                     <div className="relative">
                         <button
                             onClick={handleShare}
-                            className="flex items-center justify-center w-8 h-8 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all active:scale-90 group"
+                            className="p-1.5 text-gray-500 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
                             title="Paylaş"
                         >
-                            <Share size={15} className="group-hover:-translate-y-0.5 transition-transform" />
+                            <Share size={16} />
                         </button>
                         {showCopied && (
                             <div className="absolute -top-8 right-0 bg-white text-black text-[10px] px-2 py-1 rounded font-bold shadow-lg whitespace-nowrap animate-in fade-in zoom-in duration-200 z-20">

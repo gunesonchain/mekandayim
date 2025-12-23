@@ -24,12 +24,13 @@ export default async function DMUserPage({ params }: { params: { userId: string 
 
     if (!otherUser) notFound();
 
-    const messages = await getMessages(params.userId);
+    const { messages, hasMore } = await getMessages(params.userId);
 
     return (
         <div className="h-full flex flex-col relative z-0">
             <ChatWindow
                 initialMessages={messages}
+                initialHasMore={hasMore}
                 otherUser={otherUser}
                 currentUserId={userId}
             />

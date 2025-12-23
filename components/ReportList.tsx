@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
-import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface Report {
     id: string;
@@ -16,14 +15,13 @@ interface Report {
 }
 
 export default function ReportList({ reports }: { reports: Report[] }) {
-    const [showAll, setShowAll] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
     // Config
     const ITEMS_PER_PAGE = 5;
-    const initialItems = reports.slice(0, ITEMS_PER_PAGE);
-    const hasMore = reports.length > ITEMS_PER_PAGE;
-
-    const displayedReports = showAll ? reports : initialItems;
+    const totalPages = Math.ceil(reports.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const displayedReports = reports.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     return (
         <div className="space-y-2">
@@ -44,21 +42,21 @@ export default function ReportList({ reports }: { reports: Report[] }) {
                 ))}
             </div>
 
-            {hasMore && (
-                <button
-                    onClick={() => setShowAll(!showAll)}
-                    className="w-full py-2 text-xs text-center text-gray-400 hover:text-white hover:bg-white/5 rounded transition-colors flex items-center justify-center gap-1"
-                >
-                    {showAll ? (
-                        <>
-                            <ChevronUp size={14} /> Daha az göster
-                        </>
-                    ) : (
-                        <>
-                            <ChevronDown size={14} /> {reports.length - ITEMS_PER_PAGE} şikayeti daha göster
-                        </>
-                    )}
-                </button>
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-1 pt-2">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-7 h-7 text-xs rounded transition-colors ${currentPage === page
+                                ? 'bg-purple-600 text-white'
+                                : 'text-gray-400 hover:text-white hover:bg-white/10'
+                                }`}
+                        >
+                            {page}
+                        </button>
+                    ))}
+                </div>
             )}
         </div>
     );
