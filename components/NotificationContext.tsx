@@ -12,9 +12,9 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-export function NotificationProvider({ children }: { children: React.ReactNode }) {
+export function NotificationProvider({ children, initialCount = 0 }: { children: React.ReactNode; initialCount?: number }) {
     const { data: session, status } = useSession();
-    const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+    const [unreadMessageCount, setUnreadMessageCount] = useState(initialCount);
     const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
     const refreshCounts = useCallback(async () => {
