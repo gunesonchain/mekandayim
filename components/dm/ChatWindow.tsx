@@ -449,7 +449,7 @@ export default function ChatWindow({ initialMessages, initialHasMore, otherUser,
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Mesaj yaz..."
-                        className="flex-1 bg-white/5 border border-white/10 rounded-full py-2 px-4 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                        className="flex-1 bg-white/5 border border-white/10 rounded-full py-2 px-4 text-base md:text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
                     />
                     <button
                         type="submit"

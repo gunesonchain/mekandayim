@@ -28,7 +28,7 @@ export default function SearchInput({ variant = 'hero', placeholder = "Mekan ara
 
     const inputClasses = {
         hero: "w-full glass-panel !bg-white/5 !border-white/20 rounded-2xl py-5 pl-14 pr-6 text-lg text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all shadow-xl shadow-purple-900/5",
-        header: "w-full bg-white/10 border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all",
+        header: "w-full bg-white/10 border border-white/10 rounded-full py-2 pl-10 pr-4 text-base md:text-sm text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all",
         mobile: "w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-base text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
     };
 
