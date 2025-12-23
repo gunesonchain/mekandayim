@@ -30,6 +30,7 @@ export async function getConversations() {
     // AND the message isn't deleted by them
     // Fetch all messages where current user is sender OR receiver
     // AND the message isn't deleted by them (deleted means removed from list)
+    // OPTIMIZATION: Use select to avoiding fetching the 'image' field (Base64) which causes huge network usage
     const messages = await prisma.message.findMany({
         where: {
             AND: [
@@ -45,7 +46,18 @@ export async function getConversations() {
         orderBy: {
             createdAt: 'desc'
         },
-        include: {
+        select: {
+            id: true,
+            content: true,
+            senderId: true,
+            receiverId: true,
+            createdAt: true,
+            isRead: true,
+            deletedBySender: true,
+            deletedByReceiver: true,
+            clearedBySender: true,
+            clearedByReceiver: true,
+            // image: false, // Explicitly NOT selecting image
             sender: {
                 select: { id: true, username: true, image: true }
             },
@@ -74,7 +86,9 @@ export async function getConversations() {
             // If not cleared, we show content
             conversationMap.set(otherUser.id, {
                 user: otherUser,
-                lastMessage: isCleared ? '' : (msg.content || (msg.image ? '📷 Fotoğraf' : '')),
+                // Note: We don't have 'image' field anymore, so we can't show '📷 Fotoğraf'
+                // If content is empty (image only message), it will show empty string or we can show generic text if needed.
+                lastMessage: isCleared ? '' : (msg.content || 'Bir gönderi'),
                 lastMessageDate: msg.createdAt,
                 isRead: true, // Default
                 unreadCount: 0
