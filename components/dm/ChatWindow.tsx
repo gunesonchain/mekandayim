@@ -130,17 +130,33 @@ export default function ChatWindow({ initialMessages, initialHasMore, otherUser,
             const channelName = `private-chat-${[currentUserId, otherUser.id].sort().join('-')}`;
             const channel = pusher.subscribe(channelName);
 
-            channel.bind('new-message', (message: any) => {
+            channel.bind('new-message', async (message: any) => {
+                let fullMessage = message;
+
+                // If message has an image placeholder, fetch the actual content
+                if (message.hasImage || message.image === 'sent-image') {
+                    // Import here to avoid circular dependencies if any, though actions are usually fine
+                    const { getMessage } = await import('@/actions/dm');
+                    try {
+                        const fetched = await getMessage(message.id);
+                        if (fetched) {
+                            fullMessage = fetched;
+                        }
+                    } catch (err) {
+                        console.error("Failed to fetch full message image", err);
+                    }
+                }
+
                 setMessages(prev => {
                     // Check if message already exists (avoid duplicates from own messages)
-                    if (prev.some(m => m.id === message.id)) {
+                    if (prev.some(m => m.id === fullMessage.id)) {
                         return prev;
                     }
 
                     // Remove optimistic version if exists
                     const filtered = prev.filter(m => !m.id.startsWith('temp-'));
 
-                    return [...filtered, message];
+                    return [...filtered, fullMessage];
                 });
 
                 // Scroll to bottom after state update
@@ -216,6 +232,9 @@ export default function ChatWindow({ initialMessages, initialHasMore, otherUser,
                 }
             }, 50);
 
+            if (image) {
+                console.log("Sending image with size: " + (image.length / 1024).toFixed(2) + " KB");
+            }
             const realMessage = await sendMessage(otherUser.id, content, image || undefined);
 
             setMessages(prev => prev.map(msg =>

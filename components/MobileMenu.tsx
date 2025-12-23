@@ -167,7 +167,7 @@ export default function MobileMenu({ isOpen, onClose, session }: MobileMenuProps
                                             Giriş Yap
                                         </Link>
                                         <Link onClick={onClose} href="/auth/register" className="flex items-center justify-center gap-2 px-4 py-3 text-purple-400 border border-purple-500/50 hover:bg-purple-500/10 rounded-xl transition-colors font-medium">
-                                            Üye Ol
+                                            Kayıt Ol
                                         </Link>
                                     </div>
 

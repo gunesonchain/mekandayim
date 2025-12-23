@@ -17,9 +17,14 @@
 }
 
 @layer base {
+  html {
+    overscroll-behavior-y: none;
+  }
+
   body {
     @apply bg-[#050505] text-white;
-    background-image: 
+    overscroll-behavior-y: none;
+    background-image:
       radial-gradient(circle at 50% 0%, rgba(120, 50, 255, 0.15), transparent 40%),
       radial-gradient(circle at 0% 50%, rgba(50, 50, 100, 0.1), transparent 50%),
       radial-gradient(circle at 100% 50%, rgba(100, 0, 100, 0.1), transparent 50%);
@@ -31,7 +36,7 @@
   .glass-panel {
     @apply bg-white/5 backdrop-blur-xl border border-white/10;
   }
-  
+
   .glass-button {
     @apply bg-white/5 hover:bg-white/10 active:bg-white/20 backdrop-blur-md border border-white/10 transition-all active:scale-[0.98];
   }
@@ -46,21 +51,25 @@
     background-color: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.1);
   }
+
   25% {
     background-color: rgba(168, 85, 247, 0.15);
     border-color: rgba(168, 85, 247, 0.5);
     box-shadow: 0 0 30px rgba(168, 85, 247, 0.15);
   }
+
   50% {
     background-color: rgba(168, 85, 247, 0.25);
     border-color: rgba(168, 85, 247, 0.8);
     box-shadow: 0 0 50px rgba(168, 85, 247, 0.25);
   }
+
   75% {
     background-color: rgba(168, 85, 247, 0.15);
     border-color: rgba(168, 85, 247, 0.5);
     box-shadow: 0 0 30px rgba(168, 85, 247, 0.15);
   }
+
   100% {
     background-color: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.1);

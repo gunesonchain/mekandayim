@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, User, MessageCircle, MapPin, Menu } from 'lucide-react';
+import { Search, User, MessageCircle, MapPin, Menu, Plus, LogOut } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import clsx from 'clsx';
 import { useState } from 'react';
@@ -20,7 +20,7 @@ export default function Header() {
     return (
         <>
             <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/80 backdrop-blur-xl">
-                <div className="container mx-auto px-4 h-16 flex items-center justify-between relative">
+                <div className="container mx-auto px-4 max-w-6xl h-16 flex items-center justify-between relative">
 
                     {/* Mobile Hamburger (Left) */}
                     <button
@@ -40,47 +40,37 @@ export default function Header() {
                         </Link>
                     </div>
 
+                    {/* Centered Search (Desktop) - Only if not homepage */}
+                    {pathname !== '/' && (
+                        <div className="absolute left-1/2 -translate-x-1/2 hidden md:block w-64">
+                            <SearchInput variant="header" placeholder="Mekan ara..." />
+                        </div>
+                    )}
+
                     {/* Mobile Notification Bell (Right - symmetric to hamburger) */}
                     <div className="absolute right-2 md:hidden">
                         {session && <NotificationBell />}
                     </div>
 
-                    {/* Desktop Nav & Search */}
-                    <nav className="hidden md:flex items-center gap-6 ml-auto">
-
-                        {/* Search Input (Right aligned next to nav) */}
-                        {pathname !== '/' && (
-                            <div className="w-64 mr-2">
-                                <SearchInput variant="header" placeholder="Mekan ara..." />
-                            </div>
-                        )}
-
-                        {session ? (
-                            <Link href="/new-entry" className={clsx("text-sm font-medium transition-colors hover:text-white", pathname === '/new-entry' ? "text-white" : "text-gray-400")}>
-                                Yeni İtiraf
-                            </Link>
-                        ) : null}
+                    {/* Desktop Nav */}
+                    <nav className="hidden md:flex items-center gap-4 ml-auto">
 
                         {session ? (
                             <>
+                                <Link href="/new-entry" title="Yeni İtiraf" className={clsx("p-2 rounded-full transition-colors hover:bg-white/10 hover:text-white", pathname === '/new-entry' ? "text-white bg-white/10" : "text-gray-400")}>
+                                    <Plus size={20} />
+                                </Link>
+
+                                <Link href="/dm" title="Mesajlar" className={clsx("p-2 rounded-full transition-colors hover:bg-white/10 hover:text-white relative", pathname.startsWith('/dm') ? "text-white bg-white/10" : "text-gray-400")}>
+                                    <MessageCircle size={20} />
+                                    {unreadMessageCount > 0 && (
+                                        <span className="absolute top-1 right-1 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-600 ring-2 ring-black">
+                                        </span>
+                                    )}
+                                </Link>
+
                                 <NotificationBell />
-                                <Link href="/dm" className={clsx("text-sm font-medium transition-colors hover:text-white flex items-center gap-2", pathname.startsWith('/dm') ? "text-white" : "text-gray-400")}>
-                                    <div className="relative">
-                                        <MessageCircle size={16} />
-                                        {unreadMessageCount > 0 && (
-                                            <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white ring-2 ring-black">
-                                                {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
-                                            </span>
-                                        )}
-                                    </div>
-                                    Mesajlar
-                                </Link>
-                                <Link href="/profile" className={clsx("text-sm font-medium transition-colors hover:text-white flex items-center gap-2", pathname === '/profile' ? "text-white" : "text-gray-400")}>
-                                    <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-[10px] text-white">
-                                        {session.user?.name?.[0]?.toUpperCase()}
-                                    </div>
-                                    Profilim
-                                </Link>
+
                                 {/* @ts-ignore */}
                                 {session.user?.role === 'MODERATOR' && (
                                     <>
@@ -97,10 +87,17 @@ export default function Header() {
                                         const callbackUrl = `${window.location.origin}/`;
                                         signOut({ callbackUrl, redirect: true });
                                     }}
-                                    className="text-sm font-medium text-gray-400 hover:text-red-400 transition-colors"
+                                    title="Çıkış Yap"
+                                    className="p-2 text-gray-400 hover:text-red-400 hover:bg-white/10 rounded-full transition-colors"
                                 >
-                                    Çıkış Yap
+                                    <LogOut size={20} />
                                 </button>
+
+                                <Link href="/profile" title="Profilim" className="transition-opacity hover:opacity-80">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-xs text-white ring-2 ring-transparent hover:ring-white/20 transition-all">
+                                        {session.user?.name?.[0]?.toUpperCase()}
+                                    </div>
+                                </Link>
                             </>
                         ) : (
                             <>
@@ -108,7 +105,7 @@ export default function Header() {
                                     Giriş Yap
                                 </Link>
                                 <Link href="/auth/register" className="text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-full transition-colors">
-                                    Üye Ol
+                                    Kayıt Ol
                                 </Link>
                             </>
                         )}

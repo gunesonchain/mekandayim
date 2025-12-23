@@ -64,6 +64,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getUnreadMessageCount } from "@/app/actions";
 
+import NextTopLoader from 'nextjs-toploader';
+
 export default async function RootLayout({
     children,
 }: Readonly<{
@@ -83,6 +85,17 @@ export default async function RootLayout({
     return (
         <html lang="tr">
             <body className={outfit.className + " flex flex-col min-h-screen bg-black text-white antialiased selection:bg-purple-500/30"}>
+                <NextTopLoader
+                    color="#A855F7"
+                    initialPosition={0.08}
+                    crawlSpeed={200}
+                    height={2}
+                    crawl={true}
+                    showSpinner={false}
+                    easing="ease"
+                    speed={200}
+                    shadow="0 0 10px #A855F7,0 0 5px #A855F7"
+                />
                 <AuthProvider>
                     <ConfirmationProvider>
                         <ReportProvider>

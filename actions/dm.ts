@@ -97,6 +97,34 @@ export async function getConversations() {
     return Array.from(conversationMap.values());
 }
 
+export async function getMessage(messageId: string) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) return null;
+
+    // @ts-ignore
+    const userId = session.user.id as string;
+
+    const message = await prisma.message.findUnique({
+        where: { id: messageId },
+        include: {
+            sender: { select: { id: true, username: true, image: true } },
+            receiver: { select: { id: true, username: true, image: true } }
+        }
+    });
+
+    if (!message) return null;
+
+    // Security check: user must be sender or receiver
+    if (message.senderId !== userId && message.receiverId !== userId) {
+        return null;
+    }
+
+    return {
+        ...message,
+        createdAt: message.createdAt.toISOString()
+    };
+}
+
 export async function getMessages(otherUserId: string, cursor?: string) {
     const session = await getServerSession(authOptions);
     if (!session?.user) return { messages: [], hasMore: false };
@@ -165,6 +193,11 @@ export async function getMessages(otherUserId: string, cursor?: string) {
 }
 
 export async function sendMessage(receiverId: string, content: string, image?: string) {
+    if (image) {
+        console.log("Server received message with image size: " + (image.length / 1024).toFixed(2) + " KB");
+    } else {
+        console.log("Server received message without image");
+    }
     const session = await getServerSession(authOptions);
     if (!session?.user) throw new Error("Unauthorized");
 
@@ -226,6 +259,8 @@ export async function sendMessage(receiverId: string, content: string, image?: s
 
         await pusherServer.trigger(channelName, 'new-message', {
             ...message,
+            image: message.image ? 'sent-image' : null, // Don't send full base64 to Pusher (limit 10KB)
+            hasImage: !!message.image,
             createdAt: message.createdAt.toISOString()
         });
 
